@@ -14,6 +14,7 @@ export default function ResetPassword() {
 
   const handleReset = async (e) => {
     e.preventDefault();
+
     if (form.newPassword !== form.confirmPassword) {
       alert('❌ Passwords do not match');
       return;
@@ -22,7 +23,7 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await axios.post(
-        'http://localhost:5000/api/reset-password',
+        'http://localhost:5000/api/auth/reset-password',
         {
           otp: form.otp,
           newPassword: form.newPassword,
@@ -33,7 +34,7 @@ export default function ResetPassword() {
       navigate('/auth/login');
     } catch (err) {
       console.error(err);
-      alert('❌ Invalid OTP or session expired. Try again.');
+      alert(err?.response?.data?.msg || '❌ Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }

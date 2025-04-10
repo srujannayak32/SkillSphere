@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Add this at the top
+
 import Navbar from '../components/Navbar';
 
 export default function ForgotPassword() {
@@ -14,8 +15,13 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/forgot-password', form);
+      await axios.post(
+        'http://localhost:5000/api/auth/forgot-password',
+        form,
+        { withCredentials: true } // 🔥 Required for session storage
+      );
       navigate('/auth/reset-password');
+      
     } catch (err) {
       alert('❌ User not found or an error occurred.');
     }

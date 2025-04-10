@@ -1,10 +1,12 @@
 // 📁 backend/controllers/authController.js
+import dotenv from "dotenv";
 
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import nodemailer from 'nodemailer';
 
+dotenv.config();
 // Email transporter setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -98,25 +100,49 @@ export const forgotPasswordController = async (req, res) => {
   }
 };
 
+// export const resetPasswordController = async (req, res) => {
+//   try {
+//     const { otp, newPassword } = req.body;
+//     const email = req.session.email;
+
+//     if (!email)
+//       return res.status(400).json({ msg: 'Email not found in session' });
+
+//     const otpRecord = await Otp.findOne({ email, otp });
+//     if (!otpRecord)
+//       return res.status(400).json({ msg: 'Invalid or expired OTP' });
+
+//     const hashedPassword = await bcrypt.hash(newPassword, 10);
+//     await User.updateOne({ email }, { password: hashedPassword });
+//     await Otp.deleteMany({ email });
+
+//     res.json({ msg: 'Password updated successfully' });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ msg: 'Failed to reset password' });
+//   }
+// };
 export const resetPasswordController = async (req, res) => {
   try {
     const { otp, newPassword } = req.body;
     const email = req.session.email;
 
-    if (!email)
-      return res.status(400).json({ msg: 'Email not found in session' });
+    if (!email) {
+      return res.status(400).json({ msg: 'Email not found in session. Please verify OTP again.' });
+    }
 
     const otpRecord = await Otp.findOne({ email, otp });
-    if (!otpRecord)
-      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    if (!otpRecord) {
+      return res.status(400).json({ msg: 'Invalid or expired OTP.' });
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.updateOne({ email }, { password: hashedPassword });
     await Otp.deleteMany({ email });
 
-    res.json({ msg: 'Password updated successfully' });
+    res.json({ msg: 'Password updated successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: 'Failed to reset password' });
+    res.status(500).json({ msg: 'Failed to reset password.' });
   }
 };

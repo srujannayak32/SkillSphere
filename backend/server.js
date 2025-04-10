@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import User from "./models/User.js";
 import Otp from './models/Otp.js';
+import authRoutes from './routes/authRoutes.js'
 
 dotenv.config();
 const app = express();
@@ -55,48 +56,29 @@ const sendOtp = async (email, otp) => {
 };
 
 // Forgot Password - Generate and send OTP
-app.post("/api/forgot-password", async (req, res) => {
-  const { username, email } = req.body;
+// app.post("/api/forgot-password", async (req, res) => {
+//   const { username, email } = req.body;
   
-  // Check if user exists
-  const user = await User.findOne({ username, email });
-  if (!user) return res.status(404).json({ message: "User not found with the provided credentials" });
+//   // Check if user exists
+//   const user = await User.findOne({ username, email });
+//   if (!user) return res.status(404).json({ message: "User not found with the provided credentials" });
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  await Otp.create({ email, otp });
+//   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//   await Otp.create({ email, otp });
 
-  req.session.email = email;  // Store email in session for later use
+//   req.session.email = email;  // Store email in session for later use
 
-  try {
-    await sendOtp(email, otp);
-    res.json({ message: "OTP sent to your email." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to send OTP. Please try again later." });
-  }
-});
+//   try {
+//     await sendOtp(email, otp);
+//     res.json({ message: "OTP sent to your email." });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Failed to send OTP. Please try again later." });
+//   }
+// });
 
 // Reset Password - Verify OTP and reset password
-app.post("/api/reset-password", async (req, res) => {
-  const { otp, newPassword } = req.body;
-  const email = req.session.email;  // Retrieve email from session
-
-  // Ensure session is valid (email should exist in session)
-  if (!email) return res.status(400).json({ message: "Session expired or no email found. Please initiate the 'Forgot Password' process again." });
-
-  // Check if OTP is valid
-  const validOtp = await Otp.findOne({ email, otp });
-  if (!validOtp) return res.status(400).json({ message: "Invalid OTP" });
-
-  // Hash the new password and update the user's password in the database
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await User.updateOne({ email }, { password: hashedPassword });
-
-  // Clean up OTP after password reset
-  await Otp.deleteMany({ email });
-
-  res.json({ message: "Password reset successful" });
-});
+app.use("/api/auth", authRoutes);
 
 // Start the server
 app.listen(process.env.PORT || 5000, () => {
