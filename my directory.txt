@@ -1,0 +1,42 @@
+SkillSphere/
+	backend/
+		controllers/
+			authController.js
+		models/
+			Otp.js
+			User.js
+		node_modules/
+		routes/
+			authRoutes.js
+		.env
+		package-lock.json
+		package.json
+		server.js
+
+
+	frontend/
+		node_modules/
+		public/
+			vite.svg
+		src/
+			assests/
+				react.svg
+			components/
+				Navbar.js
+			pages/
+				Dashboard.jsx
+				Home.jsx
+				Login.jsx
+				Signup.jsx
+			App.css
+			index.css
+			main.jsx
+			
+
+		.gitignore
+		eslint.config.js
+		index.html
+		package-lock.json
+		package.json
+		README.md
+			
