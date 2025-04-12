@@ -13,17 +13,27 @@ export default function Login() {
   const login = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/login', form);
-      localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
-    } catch {
-      alert('Invalid login');
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        email: form.email,
+        password: form.password
+      }, {
+        withCredentials: true
+      });
+  
+      if (res.status === 200) {
+        navigate('/auth/dashboard');
+      }
+    } catch (error) {
+      console.error("Login error:", error.response?.data || error.message);
+      alert(error.response?.data?.message || 'Invalid login');
     }
   };
+  
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white flex items-center justify-center relative overflow-hidden">
-      <Navbar />
+      
 
       {/* Gradient background blur effect */}
       <div className="absolute top-0 left-0 w-full h-full z-0">

@@ -1,3 +1,5 @@
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -14,23 +16,42 @@ export default function Signup() {
   const sendOtp = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/send-otp', { email: form.email });
+      await axios.post('http://localhost:5000/api/auth/signup', form);
       setOtpSent(true);
-    } catch {
-      alert("Failed to send OTP");
+    } catch (err) {
+      alert("Signup failed: " + err.response?.data?.message || "Try again");
     }
   };
+  
 
   const verifyAndRegister = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post('http://localhost:5000/api/verify-otp', { email: form.email, otp });
-      await axios.post('http://localhost:5000/api/register', form);
-      navigate('/auth/login'); // ✅ This is now correct
-    } catch {
-      alert("OTP failed or Registration failed");
-    }
-  };
+  e.preventDefault();
+  try {
+    await axios.post('http://localhost:5000/api/auth/verify-otp', {
+      email: form.email,
+      otp: otp,
+      fullName: form.fullName,
+      username: form.username,
+      password: form.password,
+    });
+
+    toast.success('Registration successful! Redirecting to login...', {
+      position: 'top-center',
+      autoClose: 1500,
+    });
+
+    setTimeout(() => {
+      navigate('/auth/login');
+    }, 1500);
+  } catch (err) {
+    toast.error("OTP failed or Registration failed", {
+      position: 'top-center',
+    });
+    console.error(err);
+  }
+};
+
+  
 
   return (
     <div className="min-h-screen bg-slate-800 text-white">

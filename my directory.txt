@@ -1,4 +1,9 @@
 SkillSphere/
+	.gitignore
+	package-lock.json
+	package.json
+
+
 	backend/
 		controllers/
 			authController.js
@@ -28,9 +33,13 @@ SkillSphere/
 				Home.jsx
 				Login.jsx
 				Signup.jsx
+				ForgotPassword.jsx
+				ResetPassword.jsx
+				
 			App.css
 			index.css
 			main.jsx
+			index.css
 			
 
 		.gitignore
@@ -39,4 +48,7 @@ SkillSphere/
 		package-lock.json
 		package.json
 		README.md
+		vite.config.js
+
+
 			

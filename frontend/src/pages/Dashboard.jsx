@@ -6,17 +6,26 @@ import { BadgeCheck, Activity, Star, User, Award, TrendingUp } from "lucide-reac
 export default function Dashboard() {
   const [user, setUser] = useState(null);
 
+  const handleLogout = async () => {
+    try {
+      await axios.post("http://localhost:5000/api/auth/logout", {}, { withCredentials: true });
+      window.location.href = "/auth/login"; // Redirect to login page after logout
+    } catch (error) {
+      alert("Error logging out. Please try again.");
+    }
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/dashboard", {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await axios.get("http://localhost:5000/api/auth/dashboard", {
+          withCredentials: true, // 🔥 important for cookies
         });
         setUser(res.data);
       } catch {
         alert("Session expired. Please login again.");
-        window.location.href = "/login";
+        window.location.href = "/auth/login";
       }
     };
     fetchUser();
@@ -70,6 +79,16 @@ export default function Dashboard() {
             <h3 className="text-xl font-semibold mb-2">Progress</h3>
             <p className="text-slate-300">Intermediate Level</p>
           </div>
+        </div>
+
+        {/* Logout Button */}
+        <div className="mt-12 text-center">
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
+          >
+            Logout
+          </button>
         </div>
 
         <div className="mt-16 text-center text-lg text-slate-400">
