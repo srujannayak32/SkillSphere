@@ -1,54 +1,51 @@
 SkillSphere/
-	.gitignore
-	package-lock.json
-	package.json
-
-
-	backend/
-		controllers/
-			authController.js
-		models/
-			Otp.js
-			User.js
-		node_modules/
-		routes/
-			authRoutes.js
-		.env
-		package-lock.json
-		package.json
-		server.js
-
-
-	frontend/
-		node_modules/
-		public/
-			vite.svg
-		src/
-			assests/
-				react.svg
-			components/
-				Navbar.js
-			pages/
-				Dashboard.jsx
-				Home.jsx
-				Login.jsx
-				Signup.jsx
-				ForgotPassword.jsx
-				ResetPassword.jsx
-				
-			App.css
-			index.css
-			main.jsx
-			index.css
-			
-
-		.gitignore
-		eslint.config.js
-		index.html
-		package-lock.json
-		package.json
-		README.md
-		vite.config.js
-
-
-			
+├── .gitignore
+├── my directory.txt
+├── package-lock.json
+├── package.json
+├── README.md
+├── backend/
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── server.js
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   └── roomController.js
+│   ├── middleware/
+│   │   └── authMiddleware.js
+│   ├── models/
+│   │   ├── Otp.js
+│   │   ├── Room.js
+│   │   └── User.js
+│   └── routes/
+│       ├── authRoutes.js
+│       └── roomRoutes.js
+└── frontend/
+    ├── .gitignore
+    ├── eslint.config.js
+    ├── index.html
+    ├── package-lock.json
+    ├── package.json
+    ├── README.md
+    ├── vite.config.js
+    ├── public/
+    │   └── vite.svg
+    └── src/
+        ├── App.css
+        ├── App.jsx
+        ├── index.css
+        ├── main.jsx
+        ├── assets/
+        │   └── react.svg
+        ├── components/
+        │   └── Navbar.jsx
+        └── pages/
+            ├── CreateRoom.jsx
+            ├── Dashboard.jsx
+            ├── ForgotPassword.jsx
+            ├── Home.jsx
+            ├── JoinRoom.jsx
+            ├── Login.jsx
+            ├── ResetPassword.jsx
+            ├── RoomId.jsx
+            └── Signup.jsx
