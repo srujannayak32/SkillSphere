@@ -7,6 +7,9 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import CreateRoom from './pages/CreateRoom';
+import JoinRoom from './pages/JoinRoom';
+import RoomId from './pages/RoomId';
 
 function App() {
   return (
@@ -18,6 +21,9 @@ function App() {
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="/auth/dashboard" element={<Dashboard />} />
+        <Route path="/create-room" element={<CreateRoom />} />
+        <Route path="/join-room" element={<JoinRoom />} />
+        <Route path="/room/:id" element={<RoomId />} />
       </Routes>
     </Router>
   );

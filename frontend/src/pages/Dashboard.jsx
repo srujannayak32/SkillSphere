@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { BadgeCheck, Activity, Star, User, Award, TrendingUp } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -18,7 +19,6 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem("token");
         const res = await axios.get("http://localhost:5000/api/auth/dashboard", {
           withCredentials: true, // 🔥 important for cookies
         });
@@ -81,8 +81,24 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Room Navigation Links */}
+        <div className="mt-12 text-center space-x-4">
+          <Link 
+            to="/create-room"
+            className="bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition font-medium"
+          >
+            Create Room
+          </Link>
+          <Link 
+            to="/join-room"
+            className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-medium"
+          >
+            Join Room
+          </Link>
+        </div>
+
         {/* Logout Button */}
-        <div className="mt-12 text-center">
+        <div className="mt-8 text-center">
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
