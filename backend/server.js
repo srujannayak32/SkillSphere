@@ -5,12 +5,19 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import session from 'express-session';
 import authRoutes from './routes/authRoutes.js';
-import roomRoutes from './routes/roomRoutes.js';
-import Room from './models/Room.js';
-
+import profileRoutes from './routes/profileRoutes.js';
+import path from 'path'; // Import path module
+import { fileURLToPath } from 'url'; // Import fileURLToPath
 
 const app = express();
 const server = createServer(app);
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve images
 
 // Session configuration
 app.use(session({
@@ -89,7 +96,7 @@ io.on('connection', (socket) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/rooms', roomRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {

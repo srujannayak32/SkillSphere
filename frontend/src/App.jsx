@@ -10,6 +10,8 @@ import ResetPassword from './pages/ResetPassword';
 import CreateRoom from './pages/CreateRoom';
 import JoinRoom from './pages/JoinRoom';
 import RoomId from './pages/RoomId';
+import ProfilePage from './pages/ProfilePage';
+import ProfileEditor from './components/ProfileEditor';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
         <Route path="/create-room" element={<CreateRoom />} />
         <Route path="/join-room" element={<JoinRoom />} />
         <Route path="/room/:id" element={<RoomId />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/profile/:userId/edit" element={<ProfileEditor />} />
       </Routes>
     </Router>
   );

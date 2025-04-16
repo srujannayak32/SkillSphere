@@ -1,115 +1,270 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
-import { BadgeCheck, Activity, Star, User, Award, TrendingUp } from "lucide-react";
+import { 
+  BadgeCheck, Activity, Star, User, Award, TrendingUp,
+  MessageSquare, Users, Clock, BookOpen
+} from "lucide-react";
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    sessionsCompleted: 0,
+    mentorsConnected: 0,
+    hoursLearned: 0,
+    coursesTaken: 0
+  });
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:5000/api/auth/logout", {}, { withCredentials: true });
-      window.location.href = "/auth/login"; // Redirect to login page after logout
+      await axios.post("http://localhost:5000/api/auth/logout", {}, { 
+        withCredentials: true 
+      });
+      window.location.href = "/auth/login";
     } catch (error) {
-      alert("Error logging out. Please try again.");
+      toast.error("Error logging out. Please try again.");
     }
   };
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserData = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/dashboard", {
-          withCredentials: true, // 🔥 important for cookies
+        const userRes = await axios.get("http://localhost:5000/api/auth/dashboard", { 
+          withCredentials: true 
         });
-        setUser(res.data);
-      } catch {
-        alert("Session expired. Please login again.");
+        
+        if (!userRes.data?._id) {
+          throw new Error("User data not found");
+        }
+
+        setUser(userRes.data);
+
+        // Fetch profile and stats in parallel
+        const [profileRes, statsRes] = await Promise.all([
+          axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, { 
+            withCredentials: true 
+          }).catch(() => ({ data: null })), // Gracefully handle missing profile
+          axios.get("http://localhost:5000/api/stats/user", {
+            withCredentials: true
+          }).catch(() => ({ data: {
+            sessionsCompleted: 0,
+            mentorsConnected: 0,
+            hoursLearned: 0,
+            coursesTaken: 0
+          }}))
+        ]);
+
+        setProfile(profileRes.data);
+        setStats(statsRes.data);
+      } catch (error) {
+        toast.error("Session expired. Please login again.");
         window.location.href = "/auth/login";
+      } finally {
+        setLoading(false);
       }
     };
-    fetchUser();
+    fetchUserData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] flex items-center justify-center">
+        <div className="text-white text-2xl">Loading Dashboard...</div>
+      </div>
+    );
+  }
+
+  const dashboardCards = [
+    {
+      icon: <User className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Full Name",
+      content: user?.fullName || "Not set",
+      color: "from-cyan-600 to-cyan-800"
+    },
+    {
+      icon: <BadgeCheck className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Skills",
+      content: profile?.skills?.length > 0 ? (
+        <div className="flex gap-2 flex-wrap">
+          {profile.skills.slice(0, 3).map((skill, index) => (
+            <span key={index} className="bg-cyan-800 px-3 py-1 rounded-full text-sm">
+              {skill.name} (Lvl {skill.level})
+            </span>
+          ))}
+          {profile.skills.length > 3 && (
+            <span className="bg-cyan-900 px-3 py-1 rounded-full text-sm">
+              +{profile.skills.length - 3} more
+            </span>
+          )}
+        </div>
+      ) : (
+        <span className="text-slate-400">No skills added yet</span>
+      ),
+      color: "from-purple-600 to-purple-800"
+    },
+    {
+      icon: <Activity className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Recent Activity",
+      content: "Completed React challenge",
+      color: "from-blue-600 to-blue-800"
+    },
+    {
+      icon: <MessageSquare className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Sessions Completed",
+      content: stats.sessionsCompleted,
+      color: "from-indigo-600 to-indigo-800"
+    },
+    {
+      icon: <Users className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Mentors Connected",
+      content: stats.mentorsConnected,
+      color: "from-violet-600 to-violet-800"
+    },
+    {
+      icon: <Clock className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Hours Learned",
+      content: `${stats.hoursLearned}+ hours`,
+      color: "from-fuchsia-600 to-fuchsia-800"
+    },
+    {
+      icon: <BookOpen className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Courses Taken",
+      content: stats.coursesTaken,
+      color: "from-pink-600 to-pink-800"
+    },
+    {
+      icon: <Award className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Badges",
+      content: "🌟 Rising Star, 🔥 Fast Learner",
+      color: "from-rose-600 to-rose-800"
+    },
+    {
+      icon: <Star className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "XP Points",
+      content: "1250 XP",
+      color: "from-amber-600 to-amber-800"
+    },
+    {
+      icon: <TrendingUp className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Progress Level",
+      content: "Intermediate",
+      color: "from-emerald-600 to-emerald-800"
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white font-sans overflow-x-hidden">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-6 py-12 animate-fade-in-up">
-        <h2 className="text-5xl font-bold mb-12 text-center">
-          Welcome back, <span className="text-cyan-400">{user?.username}</span> 👋
-        </h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Welcome back, <span className="text-cyan-400">{user?.username}</span> 👋
+          </h1>
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+            {profile?.bio || "Update your profile to add a bio about yourself"}
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <User className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Full Name</h3>
-            <p className="text-slate-300">{user?.fullName}</p>
-          </div>
-
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <BadgeCheck className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Skills</h3>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-cyan-800 px-3 py-1 rounded-full text-sm">React</span>
-              <span className="bg-cyan-800 px-3 py-1 rounded-full text-sm">Node.js</span>
-              <span className="bg-cyan-800 px-3 py-1 rounded-full text-sm">MongoDB</span>
-            </div>
-          </div>
-
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <Activity className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Recent Activity</h3>
-            <p className="text-slate-300">Completed a project challenge</p>
-          </div>
-
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <Award className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Badges</h3>
-            <p className="text-slate-300">🌟 Rising Dev, 🔥 Consistent Learner</p>
-          </div>
-
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <Star className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Points</h3>
-            <p className="text-slate-300">1200 XP</p>
-          </div>
-
-          <div className="bg-[#1c1f26] hover:scale-105 transition-all duration-300 ease-in-out rounded-2xl shadow-xl p-6">
-            <TrendingUp className="text-cyan-400 w-10 h-10 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Progress</h3>
-            <p className="text-slate-300">Intermediate Level</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {dashboardCards.map((card, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              whileHover={{ scale: 1.03 }}
+              className={`bg-gradient-to-br ${card.color} rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300`}
+            >
+              <div className="flex items-center mb-4">
+                {card.icon}
+                <h3 className="text-xl font-semibold ml-3">{card.title}</h3>
+              </div>
+              <div className="text-lg">
+                {card.content}
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Room Navigation Links */}
-        <div className="mt-12 text-center space-x-4">
+        <motion.div 
+          className="mt-12 text-center space-y-4 sm:space-y-0 sm:space-x-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
           <Link 
             to="/create-room"
-            className="bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition font-medium"
+            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition transform hover:-translate-y-1"
           >
-            Create Room
+            <div className="flex items-center">
+              <Users className="mr-2" size={20} />
+              Create Study Room
+            </div>
           </Link>
           <Link 
             to="/join-room"
-            className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-medium"
+            className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition transform hover:-translate-y-1"
           >
-            Join Room
+            <div className="flex items-center">
+              <MessageSquare className="mr-2" size={20} />
+              Join a Room
+            </div>
           </Link>
-        </div>
+          <Link 
+            to={`/profile/${user?._id}/edit`}
+            className="inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-3 px-6 rounded-lg transition transform hover:-translate-y-1"
+          >
+            <div className="flex items-center">
+              <User className="mr-2" size={20} />
+              Edit Profile
+            </div>
+          </Link>
+          <Link 
+            to={`/profile/${user?._id}`}
+            className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition transform hover:-translate-y-1"
+          >
+            <div className="flex items-center">
+              <BookOpen className="mr-2" size={20} />
+              View Profile
+            </div>
+          </Link>
+        </motion.div>
 
-        {/* Logout Button */}
-        <div className="mt-8 text-center">
+        <motion.div 
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition"
+            className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-6 rounded-lg transition flex items-center mx-auto"
           >
-            Logout
+            <span>Logout</span>
           </button>
-        </div>
+        </motion.div>
 
-        <div className="mt-16 text-center text-lg text-slate-400">
-          Keep pushing your limits and building amazing things 🚀
-        </div>
+        <motion.div 
+          className="mt-16 text-center text-lg text-slate-300"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        >
+          <p>Keep pushing your limits and building amazing things 🚀</p>
+          <p className="mt-2 text-sm text-slate-400">
+            Last active: {new Date().toLocaleDateString()}
+          </p>
+        </motion.div>
       </div>
     </div>
   );
