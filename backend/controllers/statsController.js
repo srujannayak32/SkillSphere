@@ -3,10 +3,13 @@ import User from '../models/User.js';
 
 export const getUserStats = async (req, res) => {
   try {
+    // console.log(req.session);
     const userId = req.session.userId;
+
     const user = await User.findById(userId)
       .populate('connections.user', 'role')
-      .populate('sessions.mentor sessions.mentee');
+      .populate('sessions.mentorId', 'fullName role') // populate mentor
+      .populate('sessions.menteeId', 'fullName role'); // populate mentee
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -39,7 +42,7 @@ export const getUserStats = async (req, res) => {
       progress
     });
   } catch (err) {
-    console.error("Get Stats Error:", err);
+    // console.log("Get Stats Error:", err);
     res.status(500).json({ message: "Failed to get user stats" });
   }
 };

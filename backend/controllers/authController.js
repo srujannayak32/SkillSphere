@@ -161,19 +161,22 @@ export const loginUser = async (req, res) => {
 
     // If all is good, create a session or send JWT
     req.session.userId = user._id;
+    // console.log(req.session.userId)
     req.session.email = user.email;  // For session-based login
-
+    // console.log("Session Data:", req.session); // Debugging line
     res.status(200).json({ message: "Login successful" });
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: 'Login failed. Please try again.' });
   }
 };
-
+ 
 // -------------------- DASHBOARD --------------------
 export const getDashboardData = async (req, res) => {
   try {
     const email = req.session?.email;
+    // console.log("===========================")
+    // console.log(req.session)
     if (!email) return res.status(401).json({ msg: "Unauthorized: No session" });
 
     const user = await User.findOne({ email }).select("-password");

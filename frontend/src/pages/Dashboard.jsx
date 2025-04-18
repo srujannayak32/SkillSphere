@@ -35,6 +35,7 @@ export default function Dashboard() {
   };
 
   const fetchUserData = async () => {
+    // console.log("hello")
     try {
       const [userRes, statsRes] = await Promise.all([
         axios.get("http://localhost:5000/api/auth/dashboard", { 
@@ -44,8 +45,11 @@ export default function Dashboard() {
           withCredentials: true
         })
       ]);
+      console.log(userRes.data)
+      console.log(statsRes.data)
 
-      if (!userRes.data?._id) {
+      if (!userRes.data?._id) {        // await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate loading delay
+
         throw new Error("User data not found");
       }
 
@@ -58,7 +62,7 @@ export default function Dashboard() {
       });
     } catch (error) {
       toast.error("Session expired. Please login again.");
-      window.location.href = "/auth/login";
+      // window.location.href = "/auth/login";
     } finally {
       setLoading(false);
     }
