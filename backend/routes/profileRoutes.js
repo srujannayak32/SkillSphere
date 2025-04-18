@@ -6,8 +6,10 @@ import {
   endorseSkill,
   getMatches,
   getMentorsBySkill,
-  getUserStats // Import the new function
+  getUserStats
 } from '../controllers/profileController.js';
+import { createRoom, joinRoom } from '../controllers/roomController.js';
+import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
 
 const router = express.Router();
 
@@ -18,6 +20,11 @@ router.get('/:userId', getProfile);
 router.post('/endorse', endorseSkill);
 router.get('/matches', getMatches);
 router.get('/mentors/:skill', getMentorsBySkill);
-router.get('/stats/user/:userId', getUserStats); // New route for user statistics
+router.get('/stats/user/:userId', getUserStats);
+router.get('/stats/user', protect, getUserStats); // Ensure this route exists
+
+// Room routes
+router.post('/room/create', createRoom);
+router.post('/room/join', joinRoom);
 
 export default router;

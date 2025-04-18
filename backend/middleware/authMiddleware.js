@@ -1,20 +1,28 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-const authMiddleware = async (req, res, next) => {
-  try {
-    const token = req.cookies.token; // Assuming token is stored in cookies
-    if (!token) {
-      return res.status(401).json({ message: 'Unauthorized: No token provided' });
-    }
+export const protect = async (req, res, next) => {
+  let token;
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password'); // Exclude password from user data
-    next();
-  } catch (error) {
-    console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Unauthorized: Invalid token' });
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      req.user = await User.findById(decoded.id).select('-password');
+
+      next();
+    } catch (error) {
+      console.error('Not authorized, token failed:', error);
+      res.status(401).json({ message: 'Not authorized, token failed' });
+    }
+  }
+
+  if (!token) {
+    res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
-
-export default authMiddleware;

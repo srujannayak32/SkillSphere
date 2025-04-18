@@ -11,6 +11,8 @@ import {
   logout // Import logout function here
 } from '../controllers/authController.js';
 
+import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
+
 const router = express.Router();
 
 // Routes
@@ -21,5 +23,10 @@ router.get("/dashboard", getDashboardData);
 router.post('/forgot-password', forgotPasswordController);
 router.post('/reset-password', resetPasswordController);
 router.post('/logout', logout); // Add the logout route
+
+// Add route to get authenticated user details
+router.get('/me', protect, (req, res) => {
+  res.status(200).json(req.user);
+});
 
 export default router;

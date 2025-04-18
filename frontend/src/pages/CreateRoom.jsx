@@ -1,224 +1,180 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { FiVideo, FiLock, FiUsers, FiClock, FiPlus } from 'react-icons/fi';
 
-const CreateRoom = () => {
+// Configure axios
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+  withCredentials: true
+});
+
+export default function CreateRoom() {
   const [formData, setFormData] = useState({
-    meetingName: '',
-    meetingId: '', // Now required
+    name: '',
     password: '',
-    participants: 10,
-    duration: 60,
-    isPrivate: true,
-    waitingRoom: true,
-    muteOnEntry: false,
-    allowRecording: true,
-    enableChat: true,
-    enableReactions: true,
-    recurring: false,
-    schedule: null
+    maxParticipants: 10,
+    duration: 60
   });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const meetingId = formData.meetingId || 
-      Math.random().toString(36).substring(2, 8).toUpperCase();
-    navigate(`/room/${meetingId}?host=true`);
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token'); // Retrieve token from localStorage
+      console.log('Token:', token); // Debugging log
+
+      const { data } = await api.post('/api/rooms/create', formData, {
+        headers: {
+          Authorization: `Bearer ${token}` // Include token in Authorization header
+        }
+      });
+
+      console.log('Room creation response:', data); // Debugging log
+
+      if (!data?.meetingId) { // Check for meetingId instead of _id
+        throw new Error('Invalid room ID received');
+      }
+
+      toast.success('Room created successfully!');
+      navigate(`/room/${data.meetingId}`); // Use meetingId for navigation
+    } catch (error) {
+      console.error('Full error:', error);
+
+      if (error.response?.status === 401) {
+        toast.error('Unauthorized: Please login first');
+        navigate('/auth/login');
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to create room. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 p-8">
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-3xl mx-auto bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl"
-      >
-        <h1 className="text-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
-          Create New Meeting
-        </h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Meeting Name</label>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 text-white"
+    >
+      <div className="max-w-md mx-auto p-6">
+        <motion.div 
+          initial={{ y: -20 }}
+          animate={{ y: 0 }}
+          className="text-center mb-8"
+        >
+          <h1 className="text-3xl font-bold mb-2 flex items-center justify-center">
+            <FiVideo className="mr-2" /> Create New Room
+          </h1>
+          <p className="text-gray-300">Set up your meeting with advanced options</p>
+        </motion.div>
+
+        <motion.form 
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white/10 backdrop-blur-md p-6 rounded-xl shadow-2xl"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Meeting Name</label>
               <input
                 type="text"
-                name="meetingName"
-                value={formData.meetingName}
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Team Standup Meeting"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Meeting ID </label>
-              <input
-                type="text"
-                name="meetingId"
-                value={formData.meetingId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Password</label>
+            <div>
+              <label className="block text-sm font-medium mb-1 flex items-center">
+                <FiLock className="mr-1" /> Password (optional)
+              </label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Secure your meeting"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Max Participants</label>
-              <select
-                name="participants"
-                value={formData.participants}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 flex items-center">
+                  <FiUsers className="mr-1" /> Max Participants
+                </label>
+                <select
+                  name="maxParticipants"
+                  value={formData.maxParticipants}
+                  onChange={handleChange}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  {[2, 5, 10, 20, 50].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 flex items-center">
+                  <FiClock className="mr-1" /> Duration (mins)
+                </label>
+                <select
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  {[30, 60, 90, 120, 180].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-all flex items-center justify-center"
               >
-                {[2, 5, 10, 20, 50, 100].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Duration (minutes)</label>
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                min="15"
-                max="240"
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="isPrivate"
-                checked={formData.isPrivate}
-                onChange={handleChange}
-                className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label className="text-sm font-medium text-gray-300">Private Meeting</label>
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <FiPlus className="mr-2" /> Create Meeting
+                  </>
+                )}
+              </button>
             </div>
           </div>
-
-          {/* Advanced Options Section */}
-          <div className="border-t border-gray-700 pt-6">
-            <h3 className="text-lg font-semibold text-gray-300 mb-4">Advanced Options</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="waitingRoom"
-                  checked={formData.waitingRoom}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                <label className="text-sm font-medium text-gray-300">Enable Waiting Room</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="muteOnEntry"
-                  checked={formData.muteOnEntry}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                <label className="text-sm font-medium text-gray-300">Mute Participants on Entry</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="allowRecording"
-                  checked={formData.allowRecording}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                <label className="text-sm font-medium text-gray-300">Allow Recording</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="enableChat"
-                  checked={formData.enableChat}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
-                <label className="text-sm font-medium text-gray-300">Enable Chat</label>
-              </div>
-            </div>
-          </div>
-
-          {/* Recurring Meeting Section */}
-          <div className="border-t border-gray-700 pt-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <input
-                type="checkbox"
-                name="recurring"
-                checked={formData.recurring}
-                onChange={handleChange}
-                className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label className="text-lg font-semibold text-gray-300">Recurring Meeting</label>
-            </div>
-            {formData.recurring && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Schedule</label>
-                  <input
-                    type="datetime-local"
-                    name="schedule"
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Recurrence</label>
-                  <select className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg">
-                    <option>Daily</option>
-                    <option>Weekly</option>
-                    <option>Monthly</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-4">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-            >
-              Create Meeting
-            </motion.button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+        </motion.form>
+      </div>
+    </motion.div>
   );
-};
-
-export default CreateRoom;
+}

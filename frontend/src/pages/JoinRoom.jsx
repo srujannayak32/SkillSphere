@@ -1,131 +1,87 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const JoinRoom = () => {
-  const [formData, setFormData] = useState({
-    meetingId: '',
-    password: '',
-    username: '',
-    enableChat: true,
-    enableReactions: true
-  });
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ meetingId: '', password: '' });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.meetingId || !formData.password) {
-      setError('Please fill in all fields');
-      return;
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token'); // Retrieve token from localStorage
+      console.log('Token:', token); // Debugging log
+
+      const { data } = await axios.post('http://localhost:5000/api/rooms/join', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Include token in Authorization header
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+
+      console.log('Join room response:', data); // Debugging log
+
+      if (!data?.room?.meetingId) {
+        throw new Error('Invalid room ID received');
+      }
+
+      toast.success('Joining room...');
+      navigate(`/room/${data.room.meetingId}`);
+    } catch (error) {
+      console.error('Join room error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to join room');
+    } finally {
+      setLoading(false);
     }
-    navigate(`/room/${formData.meetingId}?username=${encodeURIComponent(formData.username || 'Guest')}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-pink-900 p-8">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md mx-auto bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl"
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white/10 backdrop-blur-md p-6 rounded-xl shadow-2xl w-full max-w-md"
       >
-        <h1 className="text-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-500">
-          Join Meeting
-        </h1>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 text-red-300 rounded-lg border border-red-500/30">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Meeting ID</label>
-              <input
-                type="text"
-                name="meetingId"
-                value={formData.meetingId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Enter meeting code"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Password</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Enter password"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Your Name (optional)</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Enter your display name"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="enableChat"
-                checked={formData.enableChat}
-                onChange={handleChange}
-                className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label className="text-sm font-medium text-gray-300">Enable Chat</label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="enableReactions"
-                checked={formData.enableReactions}
-                onChange={handleChange}
-                className="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label className="text-sm font-medium text-gray-300">Enable Reactions</label>
-            </div>
-          </div>
-
-          <div className="pt-4">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              className="w-full py-3 px-6 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all"
-            >
-              Join Meeting
-            </motion.button>
-          </div>
-        </form>
-
-        <div className="mt-6 text-center text-gray-400">
-          <p>Don't have a meeting? <a href="/create" className="text-pink-400 hover:underline">Create one</a></p>
+        <h1 className="text-2xl font-bold mb-4 text-center">Join a Room</h1>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Meeting ID</label>
+          <input
+            type="text"
+            name="meetingId"
+            value={formData.meetingId}
+            onChange={handleChange}
+            required
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="Enter Meeting ID"
+          />
         </div>
-      </motion.div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Password (if required)</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="Enter Password"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-all"
+        >
+          {loading ? 'Joining...' : 'Join Meeting'}
+        </button>
+      </form>
     </div>
   );
 };

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 // File Upload Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/profiles/');
+    cb(null, 'uploads/profiles/'); // Ensure this directory exists
   },
   filename: (req, file, cb) => {
     const fileExt = path.extname(file.originalname);
@@ -41,7 +41,7 @@ export const upsertProfile = async (req, res) => {
     let updateData = { userId };
 
     if (req.file) {
-      updateData.avatar = req.file.filename;
+      updateData.avatar = req.file.filename; // Save the filename in the database
     } else {
       console.error('No file uploaded'); // Debugging log
     }
@@ -211,18 +211,13 @@ export const getMentorsBySkill = async (req, res) => {
  */
 export const getUserStats = async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
+    const userId = req.user._id; // Use authenticated user's ID
 
     const profile = await Profile.findOne({ userId });
     if (!profile) {
       return res.status(404).json({ error: 'User profile not found' });
     }
 
-    // Example statistics
     const stats = {
       totalSkills: profile.skills.length,
       endorsements: profile.skills.reduce((total, skill) => total + skill.endorsements, 0),
@@ -230,12 +225,9 @@ export const getUserStats = async (req, res) => {
       avatar: profile.avatar
     };
 
-    res.status(200).json({ stats });
+    res.status(200).json(stats);
   } catch (error) {
     console.error('Error in getUserStats:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch user statistics',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to fetch user statistics' });
   }
 };

@@ -7,12 +7,12 @@ const ProfileDisplay = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const { userId } = useParams();
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'http://localhost:5000';
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/profile/${userId}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/profile/${userId}`, {
           withCredentials: true
         });
         setProfile(response.data);
@@ -39,12 +39,18 @@ const ProfileDisplay = () => {
         {profile.userId?.fullName || 'User'}'s Profile
       </h2>
       
-      {profile.avatar && (
-        <img 
-          src={`${API_BASE_URL.replace('/api', '')}/uploads/${profile.avatar}`} 
-          alt="Profile" 
-          className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
-        />
+      {profile.avatar ? (
+        <div className="flex justify-center mb-4">
+          <img 
+            src={`${API_BASE_URL}/uploads/profiles/${profile.avatar}`} 
+            alt="Profile" 
+            className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"
+          />
+        </div>
+      ) : (
+        <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 border-2 border-gray-300">
+          No Image
+        </div>
       )}
 
       {profile.bio && (

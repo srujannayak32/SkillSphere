@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import session from 'express-session';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import roomRoutes from './routes/roomRoutes.js'; // Import roomRoutes
 import path from 'path'; // Import path module
 import { fileURLToPath } from 'url'; // Import fileURLToPath
 
@@ -56,47 +57,33 @@ mongoose.connect('mongodb://localhost:27017/skillsphere')
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Socket.IO Connection Handling
+const rooms = {};
+
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  socket.on('join-room', ({ roomId, userName }) => {
+    if (!rooms[roomId]) rooms[roomId] = [];
+    rooms[roomId].push({ id: socket.id, userName });
 
-  // Join room handler
-  socket.on('join-room', async (data) => {
-    const { roomId, userId, name } = data;
-    try {
-      socket.join(roomId);
-      console.log(`${name} joined room ${roomId}`);
-      
-      socket.to(roomId).emit('participant-joined', {
-        userId,
-        name,
-        socketId: socket.id,
-        timestamp: new Date()
-      });
+    socket.join(roomId);
 
-      const room = await Room.findOne({ meetingId: roomId });
-      socket.emit('room-data', room);
-    } catch (error) {
-      console.error('Join room error:', error);
-    }
-  });
+    // Notify others in the room
+    socket.to(roomId).emit('user-joined', userName);
 
-  // Chat message handler
-  socket.on('send-message', (data) => {
-    socket.to(data.roomId).emit('receive-message', {
-      ...data,
-      timestamp: new Date()
+    socket.on('chat-message', ({ roomId, message, userName }) => {
+      io.to(roomId).emit('chat-message', { message, userName });
     });
-  });
 
-  // Disconnection handler
-  socket.on('disconnect', () => {
-    console.log(`User disconnected: ${socket.id}`);
+    socket.on('disconnect', () => {
+      rooms[roomId] = rooms[roomId].filter((user) => user.id !== socket.id);
+      socket.to(roomId).emit('user-left', userName);
+    });
   });
 });
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/rooms', roomRoutes); // Register roomRoutes
 
 // Error handling
 app.use((err, req, res, next) => {
