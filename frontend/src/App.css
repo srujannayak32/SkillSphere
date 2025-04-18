@@ -40,3 +40,15 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Prevent global styles from overriding profile-pic */
+.profile-pic {
+  all: unset; /* Reset all inherited styles */
+  width: 100px !important; /* Enforce size */
+  height: 100px !important; /* Match width for a perfect circle */
+  border-radius: 50% !important; /* Ensure circular shape */
+  object-fit: cover !important; /* Ensure the image fits within the circle */
+  margin-bottom: 1rem;
+  border: 2px solid #4a6fa5; /* Adjust border thickness */
+  display: block;
+}

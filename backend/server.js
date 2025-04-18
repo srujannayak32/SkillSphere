@@ -20,7 +20,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Serve static files from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Ensure this serves the correct directory
+app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles'))); // Serve profile photos
 
 // Session configuration
 app.use(session({

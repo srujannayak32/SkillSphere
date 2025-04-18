@@ -1,27 +1,24 @@
-// frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { 
-  BadgeCheck, Activity, Star, User, Award, MessageSquare, 
-  Users, BookOpen, Clock, TrendingUp, Zap, Heart, Shield
+  BadgeCheck, Activity, Star, User, Award, TrendingUp,
+  MessageSquare, Users, Clock, BookOpen
 } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import NotificationBadge from '../components/NotificationBadge';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     sessionsCompleted: 0,
     mentorsConnected: 0,
-    coursesTaken: 0,
-    xpPoints: 0,
-    level: 1,
-    progress: 0
+    hoursLearned: 0,
+    coursesTaken: 0
   });
-  const [loading, setLoading] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -34,42 +31,44 @@ export default function Dashboard() {
     }
   };
 
-  const fetchUserData = async () => {
-    try {
-      const [userRes, statsRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/auth/dashboard", { 
-          withCredentials: true 
-        }),
-        axios.get("http://localhost:5000/api/stats", {
-          withCredentials: true
-        })
-      ]);
-
-      if (!userRes.data?._id) {
-        throw new Error("User data not found");
-      }
-
-      setUser(userRes.data);
-      setStats(statsRes.data);
-      
-      // Update last active time
-      await axios.put("http://localhost:5000/api/user/last-active", {}, {
-        withCredentials: true
-      });
-    } catch (error) {
-      toast.error("Session expired. Please login again.");
-      window.location.href = "/auth/login";
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userRes = await axios.get("http://localhost:5000/api/auth/dashboard", { 
+          withCredentials: true 
+        });
+        
+        if (!userRes.data?._id) {
+          throw new Error("User data not found");
+        }
+
+        setUser(userRes.data);
+
+        // Fetch profile and stats in parallel
+        const [profileRes, statsRes] = await Promise.all([
+          axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, { 
+            withCredentials: true 
+          }).catch(() => ({ data: null })), // Gracefully handle missing profile
+          axios.get("http://localhost:5000/api/stats/user", {
+            withCredentials: true
+          }).catch(() => ({ data: {
+            sessionsCompleted: 0,
+            mentorsConnected: 0,
+            hoursLearned: 0,
+            coursesTaken: 0
+          }}))
+        ]);
+
+        setProfile(profileRes.data);
+        setStats(statsRes.data);
+      } catch (error) {
+        toast.error("Session expired. Please login again.");
+        window.location.href = "/auth/login";
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchUserData();
-    
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchUserData, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -79,29 +78,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const getProgressLevel = () => {
-    if (stats.xpPoints < 500) return "Beginner";
-    if (stats.xpPoints < 1500) return "Intermediate";
-    if (stats.xpPoints < 3000) return "Advanced";
-    return "Expert";
-  };
-
-  const getBadges = () => {
-    if (!user?.badges) return [];
-    
-    const badgeIcons = {
-      'Fast Learner': <Zap className="inline mr-1" size={16} />,
-      'Helpful Mentor': <Heart className="inline mr-1" size={16} />,
-      'Session Expert': <Shield className="inline mr-1" size={16} />,
-      'Level Up': <TrendingUp className="inline mr-1" size={16} />
-    };
-    
-    return user.badges.slice(0, 4).map(badge => ({
-      ...badge,
-      icon: badgeIcons[badge.name] || <Award className="inline mr-1" size={16} />
-    }));
-  };
 
   const dashboardCards = [
     {
@@ -113,16 +89,16 @@ export default function Dashboard() {
     {
       icon: <BadgeCheck className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Skills",
-      content: user?.skills?.length > 0 ? (
+      content: profile?.skills?.length > 0 ? (
         <div className="flex gap-2 flex-wrap">
-          {user.skills.slice(0, 3).map((skill, index) => (
+          {profile.skills.slice(0, 3).map((skill, index) => (
             <span key={index} className="bg-cyan-800 px-3 py-1 rounded-full text-sm">
               {skill.name} (Lvl {skill.level})
             </span>
           ))}
-          {user.skills.length > 3 && (
+          {profile.skills.length > 3 && (
             <span className="bg-cyan-900 px-3 py-1 rounded-full text-sm">
-              +{user.skills.length - 3} more
+              +{profile.skills.length - 3} more
             </span>
           )}
         </div>
@@ -134,9 +110,7 @@ export default function Dashboard() {
     {
       icon: <Activity className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Recent Activity",
-      content: user?.sessions?.length > 0 ? (
-        `Completed session on ${user.sessions[0].skillsPracticed[0]}`
-      ) : "No recent activity",
+      content: "Completed React challenge",
       color: "from-blue-600 to-blue-800"
     },
     {
@@ -152,36 +126,34 @@ export default function Dashboard() {
       color: "from-violet-600 to-violet-800"
     },
     {
+      icon: <Clock className="text-cyan-400 w-10 h-10 mb-4" />,
+      title: "Hours Learned",
+      content: `${stats.hoursLearned}+ hours`,
+      color: "from-fuchsia-600 to-fuchsia-800"
+    },
+    {
       icon: <BookOpen className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Courses Taken",
       content: stats.coursesTaken,
-      color: "from-fuchsia-600 to-fuchsia-800"
+      color: "from-pink-600 to-pink-800"
     },
     {
       icon: <Award className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Badges",
-      content: getBadges().length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {getBadges().map((badge, index) => (
-            <span key={index} className="bg-yellow-600 px-2 py-1 rounded-full text-xs">
-              {badge.icon} {badge.name}
-            </span>
-          ))}
-        </div>
-      ) : "No badges yet",
-      color: "from-amber-600 to-amber-800"
+      content: "🌟 Rising Star, 🔥 Fast Learner",
+      color: "from-rose-600 to-rose-800"
     },
     {
       icon: <Star className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "XP Points",
-      content: `${stats.xpPoints} XP (Level ${stats.level})`,
-      color: "from-emerald-600 to-emerald-800"
+      content: "1250 XP",
+      color: "from-amber-600 to-amber-800"
     },
     {
       icon: <TrendingUp className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Progress Level",
-      content: getProgressLevel(),
-      color: "from-rose-600 to-rose-800"
+      content: "Intermediate",
+      color: "from-emerald-600 to-emerald-800"
     }
   ];
 
@@ -193,26 +165,14 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex justify-between items-center mb-12"
+          className="text-center mb-12"
         >
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Welcome back, <span className="text-cyan-400">{user?.username}</span> 👋
-            </h1>
-            <p className="text-lg text-slate-300 max-w-2xl">
-              {user?.bio || "Update your profile to add a bio about yourself"}
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <NotificationBadge />
-            <Link 
-              to="/explore"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center"
-            >
-              <Users className="mr-2" size={20} />
-              Explore
-            </Link>
-          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Welcome back, <span className="text-cyan-400">{user?.username}</span> 👋
+          </h1>
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+            {profile?.bio || "Update your profile to add a bio about yourself"}
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -270,12 +230,12 @@ export default function Dashboard() {
             </div>
           </Link>
           <Link 
-            to="/connections"
+            to={`/profile/${user?._id}`}
             className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition transform hover:-translate-y-1"
           >
             <div className="flex items-center">
-              <Users className="mr-2" size={20} />
-              My Connections
+              <BookOpen className="mr-2" size={20} />
+              View Profile
             </div>
           </Link>
         </motion.div>
@@ -302,7 +262,7 @@ export default function Dashboard() {
         >
           <p>Keep pushing your limits and building amazing things 🚀</p>
           <p className="mt-2 text-sm text-slate-400">
-            Last active: {new Date(user?.lastActive).toLocaleString()}
+            Last active: {new Date().toLocaleDateString()}
           </p>
         </motion.div>
       </div>

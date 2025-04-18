@@ -231,3 +231,25 @@ export const getUserStats = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user statistics' });
   }
 };
+
+/**
+ * Update user's last active time
+ */
+export const updateLastActive = async (req, res) => {
+  try {
+    const userId = req.user?._id; // Ensure req.user exists
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID not found in request' });
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { lastActive: new Date() });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Last active time updated successfully' });
+  } catch (error) {
+    console.error('Error updating last active time:', error);
+    res.status(500).json({ message: 'Failed to update last active time', error: error.message });
+  }
+};

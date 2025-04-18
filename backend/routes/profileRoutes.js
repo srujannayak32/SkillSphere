@@ -6,7 +6,8 @@ import {
   endorseSkill,
   getMatches,
   getMentorsBySkill,
-  getUserStats
+  getUserStats,
+  updateLastActive // Import the controller
 } from '../controllers/profileController.js';
 import { createRoom, joinRoom } from '../controllers/roomController.js';
 import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
@@ -14,6 +15,8 @@ import { protect } from '../middleware/authMiddleware.js'; // Import protect mid
 const router = express.Router();
 
 // Profile routes
+router.put('/last-active', protect, updateLastActive); // Add this route
+
 router.post('/:userId/photo', uploadAssets, upsertProfile);
 router.put('/:userId', upsertProfile);
 router.get('/:userId', getProfile);

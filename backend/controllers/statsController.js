@@ -3,7 +3,11 @@ import User from '../models/User.js';
 
 export const getUserStats = async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session?.userId; // Safely access session data
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized: No session found' });
+    }
+
     const user = await User.findById(userId)
       .populate('connections.user', 'role')
       .populate('sessions.mentor sessions.mentee');
@@ -12,21 +16,15 @@ export const getUserStats = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate sessions completed
+    // Calculate stats
     const sessionsCompleted = user.sessions.length;
-
-    // Calculate mentors connected
     const mentorsConnected = user.connections.filter(
-      conn => conn.status === 'accepted' && 
+      conn => conn.status === 'accepted' &&
       (conn.user.role === 'mentor' || conn.user.role === 'both')
     ).length;
-
-    // Calculate courses taken (sessions with specific skills)
     const coursesTaken = new Set(
       user.sessions.flatMap(session => session.skillsPracticed)
     ).size;
-
-    // Calculate level progress
     const xpNeeded = Math.pow(user.level.levelNumber, 2) * 100;
     const progress = Math.floor((user.xpPoints / xpNeeded) * 100);
 
