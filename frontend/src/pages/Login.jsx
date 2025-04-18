@@ -5,6 +5,8 @@ import Navbar from '../components/Navbar';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleChange = (e) =>
@@ -12,6 +14,8 @@ export default function Login() {
 
   const login = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", {
         email: form.email,
@@ -25,12 +29,12 @@ export default function Login() {
       }
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
-      alert(error.response?.data?.message || 'Invalid login');
+      setError(error.response?.data?.message || 'Invalid login');
+    } finally {
+      setLoading(false);
     }
   };
   
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white flex items-center justify-center relative overflow-hidden">
       
@@ -76,9 +80,11 @@ export default function Login() {
         <button
           type="submit"
           className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg shadow-md transition-all"
+          disabled={loading}
         >
-          Login
+          {loading ? 'Logging in...' : 'Login'}
         </button>
+        {error && <p className="text-red-500 text-sm mt-2">Error: {error}</p>}
 
         <p className="text-sm text-center mt-6 text-gray-300">
           Don't have an account?{' '}
