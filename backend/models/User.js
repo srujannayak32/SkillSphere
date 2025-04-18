@@ -2,8 +2,8 @@
 import mongoose from "mongoose";
 
 const sessionSchema = new mongoose.Schema({
-  mentorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  menteeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  mentor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Changed from mentorId to mentor
+  mentee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Changed from menteeId to mentee
   duration: Number, // in minutes
   date: { type: Date, default: Date.now },
   skillsPracticed: [String],

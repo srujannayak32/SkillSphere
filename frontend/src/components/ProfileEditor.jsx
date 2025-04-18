@@ -153,8 +153,8 @@ const ProfileEditor = () => {
               {preview ? (
                 <img 
                   src={preview} 
-                  alt="Profile" 
-                  className="w-32 h-32 rounded-full mx-auto mb-4 object-cover"
+                  alt="Profile Preview" 
+                  className="profile-pic"
                 />
               ) : (
                 <p className="text-gray-500">Drag & drop profile picture here (JPEG, PNG, WEBP)</p>

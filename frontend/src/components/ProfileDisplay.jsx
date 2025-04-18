@@ -42,9 +42,9 @@ const ProfileDisplay = () => {
       {profile.avatar ? (
         <div className="flex justify-center mb-4">
           <img 
-            src={`${API_BASE_URL}/uploads/profiles/${profile.avatar}`} 
-            alt="Profile" 
-            className="w-32 h-32 rounded-full object-cover border-2 border-gray-300"
+            src={`http://localhost:5000/uploads/profiles/${profile.avatar}`} 
+            alt={`${profile.userId?.fullName}'s Profile`} 
+            className="profile-pic"
           />
         </div>
       ) : (

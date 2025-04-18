@@ -43,6 +43,8 @@
   object-fit: cover;
   margin-bottom: 1rem;
   border: 3px solid #4a6fa5;
+  display: block;
+  background-color: #f0f0f0; /* Add a fallback background color */
 }
 
 .skills-list {
