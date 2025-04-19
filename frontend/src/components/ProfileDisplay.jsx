@@ -8,6 +8,7 @@ const ProfileDisplay = () => {
   const [loading, setLoading] = useState(true);
   const { userId } = useParams();
   const API_BASE_URL = 'http://localhost:5000';
+  const isOwnProfile = false; // Example flag for determining if it's the user's own profile
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -57,6 +58,13 @@ const ProfileDisplay = () => {
         <div className="mb-6">
           <h3 className="text-xl font-semibold mb-2">About</h3>
           <p className="text-gray-700">{profile.bio}</p>
+        </div>
+      )}
+
+      {profile.role && (
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">Role</h3>
+          <p className="text-gray-700 capitalize">{profile.role}</p>
         </div>
       )}
 
