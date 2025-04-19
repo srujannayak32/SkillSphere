@@ -4,12 +4,14 @@ import UserCard from './UserCard';
 const ConnectionsTabs = ({ connections }) => {
   const [activeTab, setActiveTab] = useState('all');
   
-  const filteredConnections = connections.filter(conn => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'students') return conn.user.role === 'student';
-    if (activeTab === 'mentors') return conn.user.role === 'mentor';
-    return true;
-  });
+  const filteredConnections = Array.isArray(connections)
+    ? connections.filter(conn => {
+        if (activeTab === 'all') return true;
+        if (activeTab === 'students') return conn.role === 'student';
+        if (activeTab === 'mentors') return conn.role === 'mentor';
+        return true;
+      })
+    : [];
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -44,7 +46,7 @@ const ConnectionsTabs = ({ connections }) => {
             {filteredConnections.map((connection, index) => (
               <UserCard
                 key={index}
-                user={connection.user}
+                user={connection} // Pass the profile data
                 connectionStatus="accepted"
               />
             ))}

@@ -26,6 +26,7 @@ const ProfileEditor = () => {
         setProfile(response.data);
         setSkills(response.data?.skills || []);
         setValue('bio', response.data?.bio || '');
+        setValue('role', response.data?.role || 'student');
         if (response.data?.avatar) {
           setPreview(`${API_BASE_URL.replace('/api', '')}/uploads/${response.data.avatar}`);
         }
@@ -87,6 +88,7 @@ const ProfileEditor = () => {
         {
           bio: data.bio,
           skills: skills.filter(skill => skill.name.trim() !== ''),
+          role: data.role || profile?.role || 'student',
           userId
         },
         {
@@ -168,6 +170,18 @@ const ProfileEditor = () => {
                 placeholder="Tell us about yourself..."
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px]"
               />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 mb-2">Role</label>
+              <select
+                {...register('role')}
+                defaultValue={profile?.role || 'student'}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="student">Student</option>
+                <option value="mentor">Mentor</option>
+              </select>
             </div>
 
             <div>

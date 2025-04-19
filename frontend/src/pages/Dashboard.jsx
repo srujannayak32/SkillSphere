@@ -19,6 +19,7 @@ export default function Dashboard() {
     hoursLearned: 0,
     coursesTaken: 0
   });
+  const [notifications, setNotifications] = useState([]);
 
   const handleLogout = async () => {
     try {
@@ -44,7 +45,7 @@ export default function Dashboard() {
 
         setUser(userRes.data);
 
-        // Fetch profile and stats in parallel
+        // Fetch profile, stats, and notifications in parallel
         const [profileRes, statsRes] = await Promise.all([
           axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, { 
             withCredentials: true 
@@ -68,8 +69,47 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
+
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/connections/notifications', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        });
+        setNotifications(response.data || []);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        toast.error('Failed to fetch notifications');
+      }
+    };
+
     fetchUserData();
+    fetchNotifications();
   }, []);
+
+  const handleResponse = async (notificationId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/connections/respond/${notificationId}`,
+        { action },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+      toast.success(`Connection request ${action}ed`);
+      setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
+    } catch (error) {
+      console.error('Error responding to connection request:', error);
+      toast.error('Failed to respond to connection request');
+    }
+  };
 
   if (loading) {
     return (
@@ -114,46 +154,16 @@ export default function Dashboard() {
       color: "from-blue-600 to-blue-800"
     },
     {
-      icon: <MessageSquare className="text-cyan-400 w-10 h-10 mb-4" />,
-      title: "Sessions Completed",
-      content: stats.sessionsCompleted,
-      color: "from-indigo-600 to-indigo-800"
-    },
-    {
       icon: <Users className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Mentors Connected",
       content: stats.mentorsConnected,
       color: "from-violet-600 to-violet-800"
     },
     {
-      icon: <Clock className="text-cyan-400 w-10 h-10 mb-4" />,
-      title: "Hours Learned",
-      content: `${stats.hoursLearned}+ hours`,
-      color: "from-fuchsia-600 to-fuchsia-800"
-    },
-    {
-      icon: <BookOpen className="text-cyan-400 w-10 h-10 mb-4" />,
-      title: "Courses Taken",
-      content: stats.coursesTaken,
-      color: "from-pink-600 to-pink-800"
-    },
-    {
       icon: <Award className="text-cyan-400 w-10 h-10 mb-4" />,
       title: "Badges",
       content: "🌟 Rising Star, 🔥 Fast Learner",
       color: "from-rose-600 to-rose-800"
-    },
-    {
-      icon: <Star className="text-cyan-400 w-10 h-10 mb-4" />,
-      title: "XP Points",
-      content: "1250 XP",
-      color: "from-amber-600 to-amber-800"
-    },
-    {
-      icon: <TrendingUp className="text-cyan-400 w-10 h-10 mb-4" />,
-      title: "Progress Level",
-      content: "Intermediate",
-      color: "from-emerald-600 to-emerald-800"
     }
   ];
 
@@ -168,7 +178,7 @@ export default function Dashboard() {
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Welcome back, <span className="text-cyan-400">{user?.username}</span> 👋
+            Welcome back, <span className="text-cyan-400">{user?.username}</span> 
           </h1>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             {profile?.bio || "Update your profile to add a bio about yourself"}
@@ -194,6 +204,40 @@ export default function Dashboard() {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-4">Notifications</h2>
+          {notifications.length > 0 ? (
+            <ul className="space-y-4">
+              {notifications.map((notification) => (
+                <li key={notification._id} className="flex items-center justify-between bg-gray-800 p-4 rounded-lg shadow-md hover:bg-gray-700 transition">
+                  <div>
+                    <p className="text-white">{notification.message}</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      From: {notification.sender.fullName}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleResponse(notification._id, 'accept')}
+                      className="bg-green-500 text-white px-4 py-1 rounded"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleResponse(notification._id, 'reject')}
+                      className="bg-red-500 text-white px-4 py-1 rounded"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-400">No new notifications</p>
+          )}
         </div>
 
         <motion.div 
@@ -260,9 +304,9 @@ export default function Dashboard() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
         >
-          <p>Keep pushing your limits and building amazing things 🚀</p>
+          <p>Keep pushing your limits and building amazing things </p>
           <p className="mt-2 text-sm text-slate-400">
-            Last active: {new Date().toLocaleDateString()}
+            Last active: {user?.lastActive ? new Date(user.lastActive).toLocaleDateString() : "N/A"}
           </p>
         </motion.div>
       </div>
