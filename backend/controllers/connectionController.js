@@ -1,134 +1,130 @@
 import User from '../models/User.js';
+import Connection from '../models/Connection.js';
+import Profile from '../models/Profile.js';
 
 // Send connection request
 export const sendConnectionRequest = async (req, res) => {
   try {
-    const { userId } = req.session;
+    const userId = req.user?._id; // Ensure req.user exists
     const { targetUserId } = req.params;
 
+    console.log('sendConnectionRequest called with targetUserId:', targetUserId);
+
+    if (!userId || !targetUserId) {
+      return res.status(400).json({ message: 'User ID or Target User ID is missing' });
+    }
+
     if (userId.toString() === targetUserId.toString()) {
-      return res.status(400).json({ message: "Cannot connect with yourself" });
+      return res.status(400).json({ message: 'Cannot connect with yourself' });
     }
 
-    const [user, targetUser] = await Promise.all([
-      User.findById(userId),
-      User.findById(targetUserId)
-    ]);
+    const targetProfile = await Profile.findOne({ userId: targetUserId }).populate('userId', 'username');
 
-    if (!targetUser) {
-      return res.status(404).json({ message: "User not found" });
+    console.log('targetProfile found:', targetProfile);
+
+    if (!targetProfile) {
+      return res.status(404).json({ message: "Target user's profile not found" });
     }
 
-    // Check if connection already exists
-    const existingConnection = user.connections.find(
-      conn => conn.user.toString() === targetUserId.toString()
-    );
+    const existingConnection = await Connection.findOne({
+      userId,
+      connectedProfileId: targetProfile._id,
+    });
 
     if (existingConnection) {
-      return res.status(400).json({ message: "Connection request already exists" });
+      return res.status(400).json({ message: 'Connection request already exists' });
     }
 
-    // Add connection to both users
-    user.connections.push({
-      user: targetUserId,
+    const connection = new Connection({
+      userId,
+      connectedProfileId: targetProfile._id,
       status: 'pending',
-      initiatedBy: userId
+      avatar: targetProfile.avatar, // Save avatar
+      username: targetProfile.userId.username, // Save username
+      skills: targetProfile.skills, // Save skills
+      bio: targetProfile.bio, // Save bio
     });
 
-    targetUser.connections.push({
-      user: userId,
-      status: 'pending',
-      initiatedBy: userId
-    });
+    await connection.save();
 
-    // Add notification
-    targetUser.notifications.push({
-      from: userId,
-      type: 'connection',
-      message: `${user.fullName} wants to connect with you`
-    });
-
-    await Promise.all([user.save(), targetUser.save()]);
-
-    res.status(200).json({ message: "Connection request sent" });
+    res.status(200).json({ message: 'Connection request sent' });
   } catch (err) {
-    console.error("Connection Error:", err);
-    res.status(500).json({ message: "Failed to send connection request" });
+    console.error('Connection Error:', err);
+    res.status(500).json({ message: 'Failed to send connection request' });
   }
 };
 
 // Respond to connection request
 export const respondToConnection = async (req, res) => {
   try {
-    const { userId } = req.session;
+    const userId = req.user?._id; // Ensure req.user exists
     const { targetUserId } = req.params;
     const { action } = req.body; // 'accept' or 'reject'
 
-    const [user, targetUser] = await Promise.all([
-      User.findById(userId),
-      User.findById(targetUserId)
-    ]);
+    console.log(`Responding to connection request: userId=${userId}, targetUserId=${targetUserId}, action=${action}`);
 
-    if (!targetUser) {
-      return res.status(404).json({ message: "User not found" });
+    const targetProfile = await Profile.findOne({ userId: targetUserId });
+
+    if (!targetProfile) {
+      return res.status(404).json({ message: "Target user's profile not found" });
     }
 
-    // Update connection status in both users
-    const userConnection = user.connections.find(
-      conn => conn.user.toString() === targetUserId.toString()
-    );
-    
-    const targetConnection = targetUser.connections.find(
-      conn => conn.user.toString() === userId.toString()
-    );
+    const connection = await Connection.findOne({
+      userId,
+      connectedProfileId: targetProfile._id,
+    });
 
-    if (!userConnection || !targetConnection) {
-      return res.status(404).json({ message: "Connection not found" });
+    if (!connection) {
+      return res.status(404).json({ message: 'Connection request not found' });
     }
 
     if (action === 'accept') {
-      userConnection.status = 'accepted';
-      targetConnection.status = 'accepted';
-      
-      // Add notification to requester
-      targetUser.notifications.push({
-        from: userId,
-        type: 'connection',
-        message: `${user.fullName} accepted your connection request`
-      });
+      connection.status = 'connected'; // Update status to 'connected'
+      console.log('Connection request accepted:', connection);
+    } else if (action === 'reject') {
+      connection.status = 'rejected'; // Update status to 'rejected'
+      console.log('Connection request rejected:', connection);
     } else {
-      userConnection.status = 'rejected';
-      targetConnection.status = 'rejected';
+      return res.status(400).json({ message: 'Invalid action' });
     }
 
-    await Promise.all([user.save(), targetUser.save()]);
+    await connection.save();
 
     res.status(200).json({ message: `Connection request ${action}ed` });
   } catch (err) {
-    console.error("Connection Response Error:", err);
-    res.status(500).json({ message: "Failed to process connection request" });
+    console.error('Error responding to connection request:', err);
+    res.status(500).json({ message: 'Failed to respond to connection request' });
   }
 };
 
 // Get user connections
 export const getUserConnections = async (req, res) => {
   try {
-    const { userId } = req.session;
-    const user = await User.findById(userId)
-      .populate('connections.user', 'fullName photo role')
-      .populate('connections.initiatedBy', 'fullName');
+    const userId = req.user?._id; // Ensure req.user exists
+    console.log('Fetching all connections for userId:', userId);
 
-    const connections = user.connections
-      .filter(conn => conn.status === 'accepted')
-      .map(conn => ({
-        ...conn.toObject(),
-        isInitiator: conn.initiatedBy.toString() === userId.toString()
-      }));
+    const connections = await Connection.find({ userId })
+      .populate({
+        path: 'connectedProfileId',
+        populate: { path: 'userId', select: 'fullName username avatar' }, // Populate user details
+      })
+      .populate('userId', 'fullName email username'); // Populate user details
 
-    res.status(200).json(connections);
+    console.log('Connections fetched:', connections);
+
+    const formattedConnections = connections.map((conn) => ({
+      avatar: conn.connectedProfileId?.userId?.avatar || '',
+      fullName: conn.connectedProfileId?.userId?.fullName || 'Unknown User',
+      username: conn.connectedProfileId?.userId?.username || 'No username',
+      bio: conn.connectedProfileId?.bio || '',
+      role: conn.connectedProfileId?.role || '',
+      skills: conn.connectedProfileId?.skills || [],
+    }));
+
+    res.status(200).json(formattedConnections);
   } catch (err) {
-    console.error("Get Connections Error:", err);
-    res.status(500).json({ message: "Failed to get connections" });
+    console.error('Error fetching connections:', err);
+    res.status(500).json({ message: 'Failed to fetch connections' });
   }
 };
 

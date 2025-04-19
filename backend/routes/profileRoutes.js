@@ -7,7 +7,8 @@ import {
   getMatches,
   getMentorsBySkill,
   getUserStats,
-  updateLastActive // Import the controller
+  updateLastActive, // Import the controller
+  exploreProfiles // Import the new controller
 } from '../controllers/profileController.js';
 import { createRoom, joinRoom } from '../controllers/roomController.js';
 import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
@@ -19,7 +20,8 @@ router.put('/last-active', protect, updateLastActive); // Add this route
 
 router.post('/:userId/photo', uploadAssets, upsertProfile);
 router.put('/:userId', upsertProfile);
-router.get('/:userId', getProfile);
+router.get('/explore', exploreProfiles); // Ensure this is defined before '/:userId'
+router.get('/:userId', getProfile); // This should come after '/explore'
 router.post('/endorse', endorseSkill);
 router.get('/matches', getMatches);
 router.get('/mentors/:skill', getMentorsBySkill);

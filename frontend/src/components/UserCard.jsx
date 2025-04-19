@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectButton }) => {
+  const [requestSent, setRequestSent] = useState(isPending);
+
   if (!user) {
     return <div className="text-gray-500">User data is not available</div>;
   }
@@ -11,12 +13,13 @@ const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectBut
     <div className="bg-white rounded-lg shadow-md p-4">
       <div className="flex items-center space-x-4">
         <img
-          src={avatar || '/default-avatar.png'} // Use a default avatar if none is provided
+          src={avatar || '/default-avatar.png'}
           alt={fullName || 'User Avatar'}
           className="w-16 h-16 rounded-full object-cover"
         />
         <div>
-          <h3 className="font-semibold">{fullName || username || 'Unknown User'}</h3>
+          <h3 className="font-semibold">{fullName || 'Unknown User'}</h3>
+          <p className="text-sm text-gray-600">@{username || 'No username'}</p>
           <p className="text-sm text-gray-600">{bio || 'No bio available'}</p>
         </div>
       </div>
@@ -36,11 +39,14 @@ const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectBut
 
       {!hideConnectButton && (
         <div className="mt-4 flex justify-between">
-          {isPending ? (
+          {requestSent ? (
             <span className="text-gray-500 text-sm">Request Sent</span>
           ) : (
             <button
-              onClick={() => onConnect(user.userId?._id)}
+              onClick={async () => {
+                await onConnect(user.userId?._id); // Trigger backend request
+                setRequestSent(true);
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
             >
               Connect

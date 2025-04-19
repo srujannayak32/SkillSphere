@@ -16,14 +16,14 @@ const Explore = () => {
         const response = await axios.get('http://localhost:5000/api/profile/explore', {
           params: {
             query: searchQuery,
-            role: roleFilter !== 'all' ? roleFilter : undefined,
+            role: roleFilter !== 'all' ? roleFilter : undefined
           },
-          withCredentials: true,
+          withCredentials: true
         });
         setProfiles(response.data || []);
       } catch (error) {
         console.error('Error fetching profiles:', error);
-        toast.error(error.response?.data?.message || 'Failed to fetch profiles');
+        toast.error(error.response?.data?.error || 'Failed to fetch profiles');
       } finally {
         setLoading(false);
       }
@@ -103,7 +103,8 @@ const Explore = () => {
                   key={profile.userId._id}
                   user={{
                     avatar: profile.userId.avatar,
-                    fullName: profile.userId.username,
+                    fullName: profile.userId.fullName,
+                    username: profile.userId.username,
                     bio: profile.bio,
                     role: profile.role,
                     skills: profile.skills // Pass skills to UserCard

@@ -38,25 +38,25 @@ export const uploadAssets = multer({
 export const upsertProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    let updateData = { userId };
+    const { role, bio, skills } = req.body;
+
+    const updateData = {
+      userId,
+      ...(role && { role }), // Include role if provided
+      ...(bio && { bio }),
+      ...(skills && {
+        skills: skills.map(skill => ({
+          name: skill.name,
+          level: skill.level || 1,
+          endorsements: skill.endorsements || 0
+        }))
+      })
+    };
 
     if (req.file) {
       updateData.avatar = req.file.filename; // Save the filename in the database
     } else {
       console.error('No file uploaded'); // Debugging log
-    }
-
-    if (req.body) {
-      if (req.body.bio) updateData.bio = req.body.bio;
-      if (req.body.skills) {
-        updateData.skills = req.body.skills
-          .filter(skill => skill.name.trim() !== '')
-          .map(skill => ({
-            name: skill.name,
-            level: skill.level || 1,
-            endorsements: skill.endorsements || 0
-          }));
-      }
     }
 
     const profile = await Profile.findOneAndUpdate(
@@ -251,5 +251,34 @@ export const updateLastActive = async (req, res) => {
   } catch (error) {
     console.error('Error updating last active time:', error);
     res.status(500).json({ message: 'Failed to update last active time', error: error.message });
+  }
+};
+
+/**
+ * Explore profiles based on query and role
+ */
+export const exploreProfiles = async (req, res) => {
+  try {
+    const { query, role } = req.query;
+
+    const searchConditions = {};
+    if (query) {
+      searchConditions.$or = [
+        { bio: { $regex: query, $options: 'i' } },
+        { 'skills.name': { $regex: query, $options: 'i' } }
+      ];
+    }
+    if (role && ['student', 'mentor'].includes(role)) {
+      searchConditions.role = role;
+    }
+
+    const profiles = await Profile.find(searchConditions)
+      .populate('userId', 'fullName username avatar') // Ensure fullName and username are populated
+      .select('bio skills role'); // Select only necessary fields
+
+    res.status(200).json(profiles);
+  } catch (error) {
+    console.error('Error in exploreProfiles:', error);
+    res.status(500).json({ error: 'Failed to fetch profiles' });
   }
 };

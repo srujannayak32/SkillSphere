@@ -25,6 +25,12 @@ const profileSchema = new mongoose.Schema({
     institution: String,
     year: String
   }],
+  role: {
+    type: String,
+    enum: ['student', 'mentor'],
+    required: true,
+    default: 'student' // Default role
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

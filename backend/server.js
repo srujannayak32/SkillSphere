@@ -9,7 +9,7 @@ import profileRoutes from './routes/profileRoutes.js';
 import roomRoutes from './routes/roomRoutes.js'; // Import roomRoutes
 import path from 'path'; // Import path module
 import { fileURLToPath } from 'url'; // Import fileURLToPath
-import connectionRoutes from './routes/connectionRoutes.js';
+import connectionRoutes from './routes/connectionRoutes.js'; // Ensure this is imported
 import statsRoutes from './routes/statsRoutes.js';
 
 const app = express();
@@ -87,7 +87,7 @@ io.on('connection', (socket) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/rooms', roomRoutes); // Register roomRoutes
-app.use('/api/connections', connectionRoutes);
+app.use('/api/connections', connectionRoutes); // Ensure this is registered
 app.use('/api/stats', statsRoutes);
 
 // Error handling
