@@ -111,6 +111,7 @@ const Explore = () => {
                   }}
                   onConnect={() => handleConnect(profile.userId._id)}
                   isPending={pendingRequests.includes(profile.userId._id)}
+                  hideMessageButton={true} // Hide the message button
                 />
               ))}
             </div>

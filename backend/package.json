@@ -11,6 +11,8 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
@@ -22,6 +24,10 @@
     "mongoose": "^8.13.2",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^6.10.0",
+    "openai": "^4.95.1",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "uuid": "^11.1.0"

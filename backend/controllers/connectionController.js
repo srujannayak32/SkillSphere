@@ -113,6 +113,7 @@ export const getUserConnections = async (req, res) => {
     console.log('Connections fetched:', connections);
 
     const formattedConnections = connections.map((conn) => ({
+      userId: conn.connectedProfileId?.userId?._id || conn.connectedProfileId?._id, // Include userId
       avatar: conn.connectedProfileId?.userId?.avatar || '',
       fullName: conn.connectedProfileId?.userId?.fullName || 'Unknown User',
       username: conn.connectedProfileId?.userId?.username || 'No username',
@@ -178,5 +179,24 @@ export const searchUsers = async (req, res) => {
   } catch (err) {
     console.error("Search Error:", err);
     res.status(500).json({ message: "Failed to search users" });
+  }
+};
+
+// Mark messages as seen
+export const markMessagesAsSeen = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user?._id;
+
+    // Update unseen messages to seen
+    await Message.updateMany(
+      { senderId: userId, receiverId: currentUserId, isSeen: false },
+      { isSeen: true }
+    );
+
+    res.status(200).json({ message: "Messages marked as seen" });
+  } catch (err) {
+    console.error("Error marking messages as seen:", err);
+    res.status(500).json({ message: "Failed to mark messages as seen" });
   }
 };

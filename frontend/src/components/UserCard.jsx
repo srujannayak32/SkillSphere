@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectButton }) => {
+const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectButton, hideMessageButton }) => {
   const [requestSent, setRequestSent] = useState(isPending);
 
   if (!user) {
@@ -50,6 +50,14 @@ const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectBut
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
             >
               Connect
+            </button>
+          )}
+          {!hideMessageButton && (
+            <button
+              onClick={() => onConnect(user.userId?._id)} // Ensure userId is passed correctly
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
+            >
+              Message
             </button>
           )}
         </div>

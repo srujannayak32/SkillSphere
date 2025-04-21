@@ -11,6 +11,8 @@ import path from 'path'; // Import path module
 import { fileURLToPath } from 'url'; // Import fileURLToPath
 import connectionRoutes from './routes/connectionRoutes.js'; // Ensure this is imported
 import statsRoutes from './routes/statsRoutes.js';
+import aiRoutes from './routes/aiRoutes.js'; // Import AI routes
+import messageRoutes from './routes/messageRoutes.js'; // Import messageRoutes
 
 const app = express();
 const server = createServer(app);
@@ -89,6 +91,8 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/rooms', roomRoutes); // Register roomRoutes
 app.use('/api/connections', connectionRoutes); // Ensure this is registered
 app.use('/api/stats', statsRoutes);
+app.use('/api/ai', aiRoutes); // Register AI routes
+app.use('/api/messages', messageRoutes); // Register messageRoutes
 
 // Error handling
 app.use((err, req, res, next) => {
