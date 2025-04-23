@@ -100,17 +100,17 @@ const Explore = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {profiles.map((profile) => (
                 <UserCard
-                  key={profile.userId._id}
+                  key={profile.userId?._id} // Add optional chaining to avoid errors
                   user={{
-                    avatar: profile.userId.avatar,
-                    fullName: profile.userId.fullName,
-                    username: profile.userId.username,
-                    bio: profile.bio,
+                    avatar: profile.userId?.avatar || '/default-avatar.png', // Fallback to default avatar
+                    fullName: profile.userId?.fullName || 'Unknown User', // Fallback to default name
+                    username: profile.userId?.username || 'No username', // Fallback to default username
+                    bio: profile.bio || 'No bio available', // Fallback to default bio
                     role: profile.role,
                     skills: profile.skills // Pass skills to UserCard
                   }}
-                  onConnect={() => handleConnect(profile.userId._id)}
-                  isPending={pendingRequests.includes(profile.userId._id)}
+                  onConnect={() => handleConnect(profile.userId?._id)} // Ensure userId is valid
+                  isPending={pendingRequests.includes(profile.userId?._id)}
                   hideMessageButton={true} // Hide the message button
                 />
               ))}
