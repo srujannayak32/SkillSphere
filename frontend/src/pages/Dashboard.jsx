@@ -105,36 +105,37 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userRes = await axios.get("http://localhost:5000/api/auth/dashboard", { 
-          withCredentials: true 
+        const token = localStorage.getItem('token');
+        const userRes = await axios.get("http://localhost:5000/api/auth/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (!userRes.data?._id) {
           throw new Error("User data not found");
         }
 
         setUser(userRes.data);
-        
-        // Format last active date if it exists
+
         if (userRes.data.lastActive) {
           const lastActiveDate = new Date(userRes.data.lastActive);
           const formattedDate = lastActiveDate.toLocaleDateString();
           setLastActive(formattedDate);
         }
 
-        // Fetch profile, stats, and notifications in parallel
         const [profileRes, statsRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, { 
-            withCredentials: true 
+          axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
           }).catch(() => ({ data: null })),
           axios.get("http://localhost:5000/api/stats/user", {
-            withCredentials: true
-          }).catch(() => ({ data: {
-            sessionsCompleted: 0,
-            mentorsConnected: 0,
-            hoursLearned: 0,
-            coursesTaken: 0
-          }}))
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => ({
+            data: {
+              sessionsCompleted: 0,
+              mentorsConnected: 0,
+              hoursLearned: 0,
+              coursesTaken: 0,
+            },
+          })),
         ]);
 
         setProfile(profileRes.data);
@@ -152,10 +153,7 @@ export default function Dashboard() {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get('http://localhost:5000/api/connections/notifications', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
         });
         setNotifications(response.data || []);
       } catch (error) {
@@ -175,10 +173,7 @@ export default function Dashboard() {
         `http://localhost:5000/api/connections/respond/${notificationId}`,
         { action },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       toast.success(`Connection request ${action}ed`);
@@ -252,10 +247,8 @@ export default function Dashboard() {
     <div className="min-h-screen modern-gradient text-white overflow-x-hidden cursor-none">
       {/* Custom cursor */}
       <CustomCursor />
-      
       <div className="subtle-grid"></div>
       <Navbar />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -269,13 +262,11 @@ export default function Dashboard() {
             </h1>
             <div className="welcome-underline mx-auto"></div>
           </div>
-          
           <div className="mt-6 modern-container p-4 max-w-2xl mx-auto">
             <p className="text-lg">
               {profile?.bio || "Update your profile to add a bio about yourself"}
             </p>
           </div>
-          
           <div className="status-bar mt-6">
             <div className="status-item">
               <div className="status-dot blue"></div>
@@ -290,7 +281,6 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
             <motion.div
@@ -319,18 +309,17 @@ export default function Dashboard() {
             </motion.div>
           ))}
         </div>
-
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mt-12"
+          id="notifications-section"
         >
           <div className="section-header">
             <h2 className="text-2xl font-bold">Notifications</h2>
             <div className="section-line"></div>
           </div>
-          
           {notifications.length > 0 ? (
             <ul className="space-y-4 mt-6">
               {notifications.map((notification) => (
@@ -342,7 +331,7 @@ export default function Dashboard() {
                   <div className="notification-content">
                     <p className="text-white">{notification.message}</p>
                     <p className="text-sm text-blue-300 mt-1">
-                      From: {notification.sender.fullName}
+                      From: {notification.sender?.fullName || notification.sender?.username || "Unknown Sender"}
                     </p>
                   </div>
                   <div className="flex space-x-3">
@@ -368,7 +357,6 @@ export default function Dashboard() {
             </div>
           )}
         </motion.div>
-
         <motion.div 
           className="mt-12 action-grid"
           initial={{ opacity: 0 }}
@@ -412,7 +400,6 @@ export default function Dashboard() {
             <div className="action-text">View Profile</div>
           </Link>
         </motion.div>
-
         <motion.div 
           className="mt-8 text-center"
           initial={{ opacity: 0 }}
@@ -426,7 +413,6 @@ export default function Dashboard() {
             <span>Logout</span>
           </button>
         </motion.div>
-
         <motion.div 
           className="mt-12 text-center footer-text"
           initial={{ opacity: 0 }}
@@ -438,502 +424,500 @@ export default function Dashboard() {
             Last active: {lastActive}
           </p>
         </motion.div>
-      </div>
-
-      
         <Chatbot />
-      
-      
-      <style jsx>{`
-        /* Hide default cursor */
-        .cursor-none {
-          cursor: none;
-        }
-        
-        /* Custom cursor styles */
-        .custom-cursor {
-          position: fixed;
-          width: 8px;
-          height: 8px;
-          background: #38bdf8;
-          border-radius: 50%;
-          pointer-events: none;
-          transform: translate(-50%, -50%);
-          z-index: 9999;
-          transition: width 0.2s, height 0.2s, background 0.2s;
-          mix-blend-mode: difference;
-        }
-        
-        .custom-cursor.pointer {
-          width: 12px;
-          height: 12px;
-          background: #a855f7;
-          mix-blend-mode: normal;
-        }
-        
-        .cursor-ring {
-          position: fixed;
-          width: 40px;
-          height: 40px;
-          border: 1px solid rgba(56, 189, 248, 0.5);
-          border-radius: 50%;
-          pointer-events: none;
-          transform: translate(-50%, -50%);
-          z-index: 9998;
-          transition: width 0.3s, height 0.3s, border-color 0.3s, transform 0.1s;
-        }
-        
-        .cursor-ring.pointer {
-          width: 24px;
-          height: 24px;
-          border-color: rgba(168, 85, 247, 0.7);
-          background: rgba(168, 85, 247, 0.1);
-        }
-        
-        /* Cursor hover effect for interactive elements */
-        .cursor-hover-effect {
-          transition: all 0.3s ease;
-        }
-        
-        .cursor-hover-effect:hover ~ .cursor-ring {
-          transform: translate(-50%, -50%) scale(1.5);
-          border-color: rgba(168, 85, 247, 0.7);
-        }
-        
-        /* Modern gradient background */
-        .modern-gradient {
-          background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-          position: relative;
-        }
-        
-        /* Subtle grid overlay */
-        .subtle-grid {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-          background-size: 50px 50px;
-          z-index: 1;
-          pointer-events: none;
-        }
-        
-        /* Loading animation */
-        .loading-container {
-          text-align: center;
-          color: white;
-        }
-        
-        .loading-spinner {
-          display: inline-block;
-          width: 50px;
-          height: 50px;
-          border: 3px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: #3b82f6;
-          animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        /* Welcome section */
-        .welcome-container {
-          position: relative;
-          margin-bottom: 1rem;
-        }
-        
-        .gradient-text {
-          background: linear-gradient(90deg, #38bdf8, #a855f7);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          color: transparent;
-        }
-        
-        .welcome-underline {
-          height: 3px;
-          width: 180px;
-          background: linear-gradient(90deg, #38bdf8, #a855f7);
-          border-radius: 3px;
-          margin-top: 8px;
-        }
-        
-        /* Status bar */
-        .status-bar {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 2rem;
-          font-size: 0.875rem;
-          color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .status-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          animation: pulse 2s infinite;
-        }
-        
-        .status-dot.blue {
-          background-color: #38bdf8;
-          box-shadow: 0 0 5px #38bdf8;
-        }
-        
-        .status-dot.green {
-          background-color: #34d399;
-          box-shadow: 0 0 5px #34d399;
-        }
-        
-        .time-display {
-          background: rgba(0, 0, 0, 0.2);
-          padding: 0.25rem 0.75rem;
-          border-radius: 4px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          font-family: monospace;
-          letter-spacing: 0.5px;
-        }
-        
-        @keyframes pulse {
-          0% { opacity: 0.6; }
-          50% { opacity: 1; }
-          100% { opacity: 0.6; }
-        }
-        
-        /* Modern container */
-        .modern-container {
-          background: rgba(15, 23, 42, 0.5);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          backdrop-filter: blur(10px);
-        }
-        
-        /* Modern cards */
-        .modern-card {
-          position: relative;
-          border-radius: 12px;
-          padding: 1.5rem;
-          background: rgba(15, 23, 42, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-        
-        .card-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-        
-        .card-icon {
-          width: 2.5rem;
-          height: 2.5rem;
-          margin-right: 0.75rem;
-          color: white;
-          opacity: 0.9;
-        }
-        
-        .card-content {
-          position: relative;
-          z-index: 1;
-          background: rgba(0, 0, 0, 0.2);
-          padding: 1rem;
-          border-radius: 8px;
-          min-height: 60px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .card-glow {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, 
-            transparent 0%, 
-            rgba(255, 255, 255, 0.3) 50%, 
-            transparent 100%);
-        }
-        
-        .card-corner {
-          position: absolute;
-          width: 8px;
-          height: 8px;
-          border-style: solid;
-          border-color: rgba(255, 255, 255, 0.3);
-        }
-        
-        .top-left {
-          top: 8px;
-          left: 8px;
-          border-width: 1px 0 0 1px;
-        }
-        
-        .top-right {
-          top: 8px;
-          right: 8px;
-          border-width: 1px 1px 0 0;
-        }
-        
-        .bottom-left {
-          bottom: 8px;
-          left: 8px;
-          border-width: 0 0 1px 1px;
-        }
-        
-        .bottom-right {
-          bottom: 8px;
-          right: 8px;
-          border-width: 0 1px 1px 0;
-        }
-        
-        /* Card colors */
-        .blue-card {
-          background: linear-gradient(145deg, rgba(20, 83, 136, 0.7), rgba(15, 23, 42, 0.7));
-          border-top: 1px solid rgba(56, 189, 248, 0.3);
-        }
-        
-        .purple-card {
-          background: linear-gradient(145deg, rgba(76, 29, 149, 0.7), rgba(15, 23, 42, 0.7));
-          border-top: 1px solid rgba(168, 85, 247, 0.3);
-        }
-        
-        .teal-card {
-          background: linear-gradient(145deg, rgba(19, 78, 74, 0.7), rgba(15, 23, 42, 0.7));
-          border-top: 1px solid rgba(20, 184, 166, 0.3);
-        }
-        
-        .indigo-card {
-          background: linear-gradient(145deg, rgba(49, 46, 129, 0.7), rgba(15, 23, 42, 0.7));
-          border-top: 1px solid rgba(99, 102, 241, 0.3);
-        }
-        
-        .rose-card {
-          background: linear-gradient(145deg, rgba(136, 19, 55, 0.7), rgba(15, 23, 42, 0.7));
-          border-top: 1px solid rgba(244, 63, 94, 0.3);
-        }
-        
-        /* Skill badges */
-        .skill-badge {
-          background: rgba(56, 189, 248, 0.15);
-          border: 1px solid rgba(56, 189, 248, 0.3);
-          color: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.875rem;
-        }
-        
-        .skill-badge.more {
-          background: rgba(168, 85, 247, 0.15);
-          border: 1px solid rgba(168, 85, 247, 0.3);
-        }
-        
-        /* Section styling */
-        .section-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-        
-        .section-line {
-          flex: 1;
-          height: 1px;
-          margin-left: 1rem;
-          background: linear-gradient(
-            90deg, 
-            rgba(56, 189, 248, 0.5) 0%, 
-            transparent 100%
-          );
-        }
-        
-        /* Notification styling */
-        .notification-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          background: rgba(15, 23, 42, 0.5);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-left: 3px solid #38bdf8;
-          border-radius: 8px;
-          transition: all 0.3s ease;
-        }
-        
-        .notification-content {
-          flex: 1;
-        }
-        
-        .action-button {
-          padding: 0.4rem 1rem;
-          border-radius: 4px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-        }
-        
-        .action-button.accept {
-          background: rgba(52, 211, 153, 0.2);
-          border: 1px solid rgba(52, 211, 153, 0.4);
-          color: #34d399;
-        }
-        
-        .action-button.accept:hover {
-          background: rgba(52, 211, 153, 0.3);
-        }
-        
-        .action-button.reject {
-          background: rgba(244, 63, 94, 0.2);
-          border: 1px solid rgba(244, 63, 94, 0.4);
-          color: #f43f5e;
-        }
-        
-        .action-button.reject:hover {
-          background: rgba(244, 63, 94, 0.3);
-        }
-        
-        /* Empty state */
-        .empty-state {
-          padding: 2rem;
-          text-align: center;
-          background: rgba(15, 23, 42, 0.5);
-          border: 1px dashed rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          color: rgba(255, 255, 255, 0.6);
-        }
-        
-        /* Action grid */
-        .action-grid {
-          display: grid;
-          grid-template-columns: repeat(1, 1fr);
-          gap: 1rem;
-        }
-        
-        @media (min-width: 640px) {
-          .action-grid {
-            grid-template-columns: repeat(2, 1fr);
+      </div>
+      <style>
+        {`
+          /* Hide default cursor */
+          .cursor-none {
+            cursor: none;
           }
-        }
-        
-        @media (min-width: 1024px) {
-          .action-grid {
-            grid-template-columns: repeat(4, 1fr);
+          
+          /* Custom cursor styles */
+          .custom-cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: #38bdf8;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            mix-blend-mode: difference;
           }
-        }
-        
-        .action-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 1.5rem;
-          background: rgba(15, 23, 42, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          transition: all 0.3s ease;
-          text-align: center;
-        }
-        
-        .action-card:hover {
-          transform: translateY(-5px);
-        }
-        
-        .action-icon {
-          background: rgba(0, 0, 0, 0.2);
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1rem;
-          transition: all 0.3s ease;
-        }
-        
-        .action-text {
-          font-weight: 500;
-        }
-        
-        .action-card.create {
-          border-top: 2px solid #38bdf8;
-        }
-        
-        .action-card.create:hover {
-          box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3);
-        }
-        
-        .action-card.create .action-icon {
-          color: #38bdf8;
-        }
-        
-        .action-card.join {
-          border-top: 2px solid #34d399;
-        }
-        
-        .action-card.join:hover {
-          box-shadow: 0 10px 25px -5px rgba(52, 211, 153, 0.3);
-        }
-        
-        .action-card.join .action-icon {
-          color: #34d399;
-        }
-        
-        .action-card.edit {
-          border-top: 2px solid #a855f7;
-        }
-        
-        .action-card.edit:hover {
-          box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.3);
-        }
-        
-        .action-card.edit .action-icon {
-          color: #a855f7;
-        }
-        
-        .action-card.view {
-          border-top: 2px solid #f43f5e;
-        }
-        
-        .action-card.view:hover {
-          box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.3);
-        }
-        
-        .action-card.view .action-icon {
-          color: #f43f5e;
-        }
-        
-        /* Logout button */
-        .logout-button {
-          background: rgba(244, 63, 94, 0.1);
-          border: 1px solid rgba(244, 63, 94, 0.3);
-          color: white;
-          padding: 0.75rem 2rem;
-          border-radius: 8px;
-          font-weight: 500;
-          transition: all 0.3s ease;
-        }
-        
-        .logout-button:hover {
-          background: rgba(244, 63, 94, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(244, 63, 94, 0.2);
-        }
-        
-        /* Footer text */
-        .footer-text {
-          color: rgba(255, 255, 255, 0.7);
-        }
-      `}</style>
+          
+          .custom-cursor.pointer {
+            width: 12px;
+            height: 12px;
+            background: #a855f7;
+            mix-blend-mode: normal;
+          }
+          
+          .cursor-ring {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9998;
+            transition: width 0.3s, height 0.3s, border-color 0.3s, transform 0.1s;
+          }
+          
+          .cursor-ring.pointer {
+            width: 24px;
+            height: 24px;
+            border-color: rgba(168, 85, 247, 0.7);
+            background: rgba(168, 85, 247, 0.1);
+          }
+          
+          /* Cursor hover effect for interactive elements */
+          .cursor-hover-effect {
+            transition: all 0.3s ease;
+          }
+          
+          .cursor-hover-effect:hover ~ .cursor-ring {
+            transform: translate(-50%, -50%) scale(1.5);
+            border-color: rgba(168, 85, 247, 0.7);
+          }
+          
+          /* Modern gradient background */
+          .modern-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            position: relative;
+          }
+          
+          /* Subtle grid overlay */
+          .subtle-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+              linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+          }
+          
+          /* Loading animation */
+          .loading-container {
+            text-align: center;
+            color: white;
+          }
+          
+          .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+          }
+          
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          
+          /* Welcome section */
+          .welcome-container {
+            position: relative;
+            margin-bottom: 1rem;
+          }
+          
+          .gradient-text {
+            background: linear-gradient(90deg, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+          }
+          
+          .welcome-underline {
+            height: 3px;
+            width: 180px;
+            background: linear-gradient(90deg, #38bdf8, #a855f7);
+            border-radius: 3px;
+            margin-top: 8px;
+          }
+          
+          /* Status bar */
+          .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+          }
+          
+          .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          
+          .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+          }
+          
+          .status-dot.blue {
+            background-color: #38bdf8;
+            box-shadow: 0 0 5px #38bdf8;
+          }
+          
+          .status-dot.green {
+            background-color: #34d399;
+            box-shadow: 0 0 5px #34d399;
+          }
+          
+          .time-display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            letter-spacing: 0.5px;
+          }
+          
+          @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+          }
+          
+          /* Modern container */
+          .modern-container {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+          }
+          
+          /* Modern cards */
+          .modern-card {
+            position: relative;
+            border-radius: 12px;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+          }
+          
+          .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+          }
+          
+          .card-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            margin-right: 0.75rem;
+            color: white;
+            opacity: 0.9;
+          }
+          
+          .card-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+          }
+          
+          .card-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+              transparent 0%, 
+              rgba(255, 255, 255, 0.3) 50%, 
+              transparent 100%);
+          }
+          
+          .card-corner {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.3);
+          }
+          
+          .top-left {
+            top: 8px;
+            left: 8px;
+            border-width: 1px 0 0 1px;
+          }
+          
+          .top-right {
+            top: 8px;
+            right: 8px;
+            border-width: 1px 1px 0 0;
+          }
+          
+          .bottom-left {
+            bottom: 8px;
+            left: 8px;
+            border-width: 0 0 1px 1px;
+          }
+          
+          .bottom-right {
+            bottom: 8px;
+            right: 8px;
+            border-width: 0 1px 1px 0;
+          }
+          
+          /* Card colors */
+          .blue-card {
+            background: linear-gradient(145deg, rgba(20, 83, 136, 0.7), rgba(15, 23, 42, 0.7));
+            border-top: 1px solid rgba(56, 189, 248, 0.3);
+          }
+          
+          .purple-card {
+            background: linear-gradient(145deg, rgba(76, 29, 149, 0.7), rgba(15, 23, 42, 0.7));
+            border-top: 1px solid rgba(168, 85, 247, 0.3);
+          }
+          
+          .teal-card {
+            background: linear-gradient(145deg, rgba(19, 78, 74, 0.7), rgba(15, 23, 42, 0.7));
+            border-top: 1px solid rgba(20, 184, 166, 0.3);
+          }
+          
+          .indigo-card {
+            background: linear-gradient(145deg, rgba(49, 46, 129, 0.7), rgba(15, 23, 42, 0.7));
+            border-top: 1px solid rgba(99, 102, 241, 0.3);
+          }
+          
+          .rose-card {
+            background: linear-gradient(145deg, rgba(136, 19, 55, 0.7), rgba(15, 23, 42, 0.7));
+            border-top: 1px solid rgba(244, 63, 94, 0.3);
+          }
+          
+          /* Skill badges */
+          .skill-badge {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+          }
+          
+          .skill-badge.more {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+          }
+          
+          /* Section styling */
+          .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+          }
+          
+          .section-line {
+            flex: 1;
+            height: 1px;
+            margin-left: 1rem;
+            background: linear-gradient(
+              90deg, 
+              rgba(56, 189, 248, 0.5) 0%, 
+              transparent 100%
+            );
+          }
+          
+          /* Notification styling */
+          .notification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #38bdf8;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+          }
+          
+          .notification-content {
+            flex: 1;
+          }
+          
+          .action-button {
+            padding: 0.4rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+          }
+          
+          .action-button.accept {
+            background: rgba(52, 211, 153, 0.2);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            color: #34d399;
+          }
+          
+          .action-button.accept:hover {
+            background: rgba(52, 211, 153, 0.3);
+          }
+          
+          .action-button.reject {
+            background: rgba(244, 63, 94, 0.2);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            color: #f43f5e;
+          }
+          
+          .action-button.reject:hover {
+            background: rgba(244, 63, 94, 0.3);
+          }
+          
+          /* Empty state */
+          .empty-state {
+            padding: 2rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.6);
+          }
+          
+          /* Action grid */
+          .action-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 1rem;
+          }
+          
+          @media (min-width: 640px) {
+            .action-grid {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+          
+          @media (min-width: 1024px) {
+            .action-grid {
+              grid-template-columns: repeat(4, 1fr);
+            }
+          }
+          
+          .action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            text-align: center;
+          }
+          
+          .action-card:hover {
+            transform: translateY(-5px);
+          }
+          
+          .action-icon {
+            background: rgba(0, 0, 0, 0.2);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+          }
+          
+          .action-text {
+            font-weight: 500;
+          }
+          
+          .action-card.create {
+            border-top: 2px solid #38bdf8;
+          }
+          
+          .action-card.create:hover {
+            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3);
+          }
+          
+          .action-card.create .action-icon {
+            color: #38bdf8;
+          }
+          
+          .action-card.join {
+            border-top: 2px solid #34d399;
+          }
+          
+          .action-card.join:hover {
+            box-shadow: 0 10px 25px -5px rgba(52, 211, 153, 0.3);
+          }
+          
+          .action-card.join .action-icon {
+            color: #34d399;
+          }
+          
+          .action-card.edit {
+            border-top: 2px solid #a855f7;
+          }
+          
+          .action-card.edit:hover {
+            box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.3);
+          }
+          
+          .action-card.edit .action-icon {
+            color: #a855f7;
+          }
+          
+          .action-card.view {
+            border-top: 2px solid #f43f5e;
+          }
+          
+          .action-card.view:hover {
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.3);
+          }
+          
+          .action-card.view .action-icon {
+            color: #f43f5e;
+          }
+          
+          /* Logout button */
+          .logout-button {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          
+          .logout-button:hover {
+            background: rgba(244, 63, 94, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 63, 94, 0.2);
+          }
+          
+          /* Footer text */
+          .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+          }
+        `}
+      </style>
     </div>
   );
 }

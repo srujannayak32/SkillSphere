@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { FiVideo, FiLock, FiUsers, FiClock, FiPlus } from 'react-icons/fi';
+import { FiVideo, FiLock, FiUsers, FiClock, FiPlus, FiFilm } from 'react-icons/fi';
 
 // Configure axios
 const api = axios.create({
@@ -33,35 +33,30 @@ export default function CreateRoom() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token'); // Retrieve token from localStorage
-      console.log('Token:', token); // Debugging log
+      const token = localStorage.getItem('token');
 
       const { data } = await api.post('/api/rooms/create', formData, {
         headers: {
-          Authorization: `Bearer ${token}` // Include token in Authorization header
+          Authorization: `Bearer ${token}`
         }
       });
 
-      console.log('Room creation response:', data); // Debugging log
-
-      if (!data?.meetingId) { // Check for meetingId instead of _id
+      if (!data?.meetingId) {
         throw new Error('Invalid room ID received');
       }
 
       toast.success('Room created successfully!');
-      navigate(`/room/${data.meetingId}`); // Use meetingId for navigation
+      navigate(`/room/${data.meetingId}`);
     } catch (error) {
-      console.error('Full error:', error);
-
-      if (error.response?.status === 401) {
-        toast.error('Unauthorized: Please login first');
-        navigate('/auth/login');
-      } else {
-        toast.error(error.response?.data?.error || 'Failed to create room. Please try again.');
-      }
+      console.error('Error creating room:', error);
+      toast.error(error.response?.data?.message || 'Failed to create room');
     } finally {
       setLoading(false);
     }
+  };
+
+  const viewRecordings = () => {
+    navigate('/recordings');
   };
 
   return (
@@ -80,6 +75,14 @@ export default function CreateRoom() {
             <FiVideo className="mr-2" /> Create New Room
           </h1>
           <p className="text-gray-300">Set up your meeting with advanced options</p>
+          
+          {/* Recordings button */}
+          <button
+            onClick={viewRecordings}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center mx-auto"
+          >
+            <FiFilm className="mr-2" /> View My Recordings
+          </button>
         </motion.div>
 
         <motion.form 

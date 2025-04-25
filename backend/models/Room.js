@@ -5,7 +5,9 @@ const roomSchema = new mongoose.Schema({
     type: String, 
     required: true, 
     unique: true, 
-    default: () => `room-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` // Generate unique meetingId
+    default: function () { 
+      return `room-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`; 
+    } // Ensure unique meetingId generation
   },
   name: { type: String, required: true },
   password: { type: String },

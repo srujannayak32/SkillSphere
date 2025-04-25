@@ -1,18 +1,24 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-export const protect = (req, res, next) => {
+export const protect = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    console.log('Token received in protect middleware:', token);
-
     if (!token) {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { _id: decoded.id };
-    console.log('Decoded user:', req.user);
+    
+    // Fetch the full user object from the database (excluding password)
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Attach the full user object to req.user
+    req.user = user;
 
     next();
   } catch (err) {

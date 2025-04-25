@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import UserCard from './UserCard';
 
-const ConnectionsTabs = ({ connections }) => {
+const ConnectionsTabs = ({ connections, onMessageClick }) => {
   const [activeTab, setActiveTab] = useState('all');
   
   const filteredConnections = Array.isArray(connections)
@@ -48,6 +48,8 @@ const ConnectionsTabs = ({ connections }) => {
                 key={index}
                 user={connection} // Pass the profile data
                 connectionStatus="accepted"
+                onMessageClick={onMessageClick}
+                hideConnectButton={true}
               />
             ))}
           </div>

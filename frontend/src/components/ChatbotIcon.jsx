@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ChatBubbleLeftRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
-const ChatbotIcon = ({ onClick, isOpen }) => {
+const ChatbotIcon = ({ onClick, isOpen, hasNewMessages }) => {
   return (
     <motion.div
       className="fixed bottom-8 right-8 z-50"
@@ -25,6 +25,10 @@ const ChatbotIcon = ({ onClick, isOpen }) => {
             <div className="absolute inset-0 rounded-full bg-white opacity-10 animate-pulse"></div>
             <div className="absolute inset-0 rounded-full border-2 border-white/30 animate-[spin_10s_linear_infinite]"></div>
           </>
+        )}
+        
+        {hasNewMessages && !isOpen && (
+          <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
         )}
       </button>
     </motion.div>

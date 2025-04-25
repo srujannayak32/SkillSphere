@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectButton, hideMessageButton }) => {
+const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectButton, hideMessageButton, onMessageClick }) => {
   const [requestSent, setRequestSent] = useState(isPending);
 
   if (!user) {
@@ -37,9 +37,9 @@ const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectBut
         </div>
       )}
 
-      {!hideConnectButton && (
-        <div className="mt-4 flex justify-between">
-          {requestSent ? (
+      <div className="mt-4 flex justify-between">
+        {!hideConnectButton && (
+          requestSent ? (
             <span className="text-gray-500 text-sm">Request Sent</span>
           ) : (
             <button
@@ -51,17 +51,17 @@ const UserCard = ({ user, onConnect, isPending, connectionStatus, hideConnectBut
             >
               Connect
             </button>
-          )}
-          {!hideMessageButton && (
-            <button
-              onClick={() => onConnect(user.userId?._id)} // Ensure userId is passed correctly
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm"
-            >
-              Message
-            </button>
-          )}
-        </div>
-      )}
+          )
+        )}
+        {!hideMessageButton && (
+          <button
+            onClick={() => onMessageClick && onMessageClick(user.userId || user._id)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm"
+          >
+            Message
+          </button>
+        )}
+      </div>
 
       {connectionStatus && (
         <p className="mt-2 text-sm text-green-500">Status: {connectionStatus}</p>

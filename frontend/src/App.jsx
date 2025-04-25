@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Chatbot } from './components';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -13,10 +14,14 @@ import ProfilePage from './pages/ProfilePage';
 import ProfileEditor from './components/ProfileEditor';
 import Explore from './pages/Explore';
 import Connections from './pages/Connections';
+import Recordings from './pages/Recordings';
 
 function App() {
+  const isAuthenticated = localStorage.getItem('token') !== null; // Check for valid JWT token
+
   return (
     <Router>
+      {isAuthenticated && <Chatbot />}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -24,19 +29,24 @@ function App() {
         <Route path="/auth/signup" element={<Signup />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
-        
-        {/* App Routes (accessible without protection) */}
-        <Route path="/auth/dashboard" element={<Dashboard />} />
-        <Route path="/create-room" element={<CreateRoom />} />
-        <Route path="/join-room" element={<JoinRoom />} />
-        <Route path="/room/:id" element={<RoomId />} />
-        <Route path="/profile/:userId" element={<ProfilePage />} />
-        <Route path="/profile/:userId/edit" element={<ProfileEditor />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/connections" element={<Connections />} />
-        
-        {/* Redirect to home for unknown routes */}
-        <Route path="*" element={<Home />} />
+
+        {/* Protected Routes */}
+        {isAuthenticated && (
+          <>
+            <Route path="/auth/dashboard" element={<Dashboard />} />
+            <Route path="/create-room" element={<CreateRoom />} />
+            <Route path="/join-room" element={<JoinRoom />} />
+            <Route path="/room/:id" element={<RoomId />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/profile/:userId/edit" element={<ProfileEditor />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/connections" element={<Connections />} />
+            <Route path="/recordings" element={<Recordings />} />
+          </>
+        )}
+
+        {/* Redirect to login for unknown routes */}
+        <Route path="*" element={<Login />} />
       </Routes>
     </Router>
   );

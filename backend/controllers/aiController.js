@@ -1,40 +1,60 @@
 // backend/controllers/aiController.js
-import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-dotenv.config();
+// Define API key directly from the .env file
+const GEMINI_API_KEY = 'AIzaSyAdZxtmEgM639r03WFNsSm3FJmpLEDGPQw';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Google Generative AI with Gemini model
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 export const askAI = async (req, res) => {
   try {
     const { message, context } = req.body;
     
-    const response = await openai.chat.completions.create({
-      model: process.env.AI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: `You are SkillSphere AI, a helpful assistant for a mentorship platform. 
-          You help users with learning resources, mentorship advice, and technical questions.
-          Current context: ${context || 'general question'}`
-        },
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+    
+    console.log('Processing AI request with message:', message.substring(0, 30) + '...');
+
+    // Use a hardcoded model name that works with the library version
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // Generate content using Gemini
+    const result = await model.generateContent({
+      contents: [
         {
           role: "user",
-          content: message
+          parts: [
+            {
+              text: `You are SkillSphere AI, a helpful assistant for a mentorship platform. 
+              You help users with learning resources, mentorship advice, and technical questions.
+              Current context: ${context || 'general question'}
+              
+              User question: ${message}`
+            }
+          ]
         }
       ],
-      temperature: 0.7,
-      max_tokens: 500
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1000,
+      }
     });
 
+    const response = result.response;
+    const aiResponse = response.text();
+    console.log('AI response successful, length:', aiResponse.length);
+
     res.json({
-      answer: response.choices[0].message.content
+      answer: aiResponse
     });
   } catch (error) {
-    console.error('AI Error:', error);
-    res.status(500).json({ error: 'Failed to get AI response' });
+    console.error('AI Error details:', error);
+    
+    // Always return a user-friendly response
+    return res.status(200).json({
+      answer: `I'm having trouble connecting to my AI service right now. The specific error is: ${error.message || 'Unknown error'}. Please try again in a few moments or contact support if the issue persists.`
+    });
   }
 };

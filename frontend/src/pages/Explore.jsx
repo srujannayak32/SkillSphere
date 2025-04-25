@@ -11,13 +11,28 @@ const Explore = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
 
   useEffect(() => {
+    // Load pending requests from localStorage if available
+    const savedPendingRequests = localStorage.getItem('pendingConnectionRequests');
+    if (savedPendingRequests) {
+      setPendingRequests(JSON.parse(savedPendingRequests));
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchProfiles = async () => {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          toast.error('You must be logged in to view profiles.');
+          return;
+        }
+
         const response = await axios.get('http://localhost:5000/api/profile/explore', {
           params: {
             query: searchQuery,
             role: roleFilter !== 'all' ? roleFilter : undefined
           },
+          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
         setProfiles(response.data || []);
@@ -34,22 +49,34 @@ const Explore = () => {
 
   const handleConnect = async (userId) => {
     try {
+      if (!userId) {
+        toast.error('Invalid user ID');
+        return;
+      }
+
       const token = localStorage.getItem('token');
       if (!token) {
         toast.error('You must be logged in to connect.');
         return;
       }
 
-      await axios.post(
+      const response = await axios.post(
         `http://localhost:5000/api/connections/connect/${userId}`,
-        {},
+        {}, // Empty body
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
           withCredentials: true
         }
       );
 
-      setPendingRequests((prev) => [...prev, userId]); // Mark as pending
+      // Update pending requests in state and localStorage
+      const newPendingRequests = [...pendingRequests, userId];
+      setPendingRequests(newPendingRequests);
+      localStorage.setItem('pendingConnectionRequests', JSON.stringify(newPendingRequests));
+      
       toast.success('Connection request sent!');
     } catch (error) {
       console.error('Error sending connection request:', error);

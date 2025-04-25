@@ -1,6 +1,7 @@
 //backend/controllers/authController.js
 import dotenv from "dotenv";
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import nodemailer from 'nodemailer';
@@ -145,25 +146,35 @@ export const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "Invalid email " });
+      return res.status(404).json({ message: "Invalid email" });
     }
 
-    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    // Check if email is verified
     if (!user.verified) {
       return res.status(403).json({ message: "Please verify your email before logging in." });
     }
 
-    // If all is good, create a session or send JWT
-    req.session.userId = user._id;
-    req.session.email = user.email;  // For session-based login
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-    res.status(200).json({ message: "Login successful" });
+    // Create user data object without sensitive information
+    const userData = {
+      _id: user._id,
+      fullName: user.fullName,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    };
+
+    res.status(200).json({ 
+      message: "Login successful", 
+      token,
+      user: userData
+    });
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: 'Login failed. Please try again.' });
@@ -173,10 +184,10 @@ export const loginUser = async (req, res) => {
 // -------------------- DASHBOARD --------------------
 export const getDashboardData = async (req, res) => {
   try {
-    const email = req.session?.email;
-    if (!email) return res.status(401).json({ msg: "Unauthorized: No session" });
+    const userId = req.user?._id; // Use JWT-based user ID
+    if (!userId) return res.status(401).json({ msg: "Unauthorized: No token" });
 
-    const user = await User.findOne({ email }).select("-password");
+    const user = await User.findById(userId).select("-password");
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     res.status(200).json(user);

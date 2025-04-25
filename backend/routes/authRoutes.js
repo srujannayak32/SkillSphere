@@ -1,6 +1,5 @@
 //routes/authRoutes.js
 import express from 'express';
-
 import {
   signup,
   verifyOtp,
@@ -8,23 +7,21 @@ import {
   resetPasswordController,
   loginUser,
   getDashboardData,
-  logout // Import logout function here
+  logout
 } from '../controllers/authController.js';
-
-import { protect } from '../middleware/authMiddleware.js'; // Import protect middleware
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Routes
 router.post('/signup', signup);
 router.post('/verify-otp', verifyOtp);
-router.post('/login', loginUser); // 👈 Add this route
-router.get("/dashboard", getDashboardData);
+router.post('/login', loginUser);
+router.get('/dashboard', protect, getDashboardData); // Ensure this route is protected
 router.post('/forgot-password', forgotPasswordController);
 router.post('/reset-password', resetPasswordController);
-router.post('/logout', logout); // Add the logout route
+router.post('/logout', logout);
 
-// Add route to get authenticated user details
+// Add the /me endpoint to return the current user
 router.get('/me', protect, (req, res) => {
   res.status(200).json(req.user);
 });

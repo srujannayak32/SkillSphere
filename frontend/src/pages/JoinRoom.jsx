@@ -17,18 +17,15 @@ const JoinRoom = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token'); // Retrieve token from localStorage
-      console.log('Token:', token); // Debugging log
+      const token = localStorage.getItem('token');
 
       const { data } = await axios.post('http://localhost:5000/api/rooms/join', formData, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include token in Authorization header
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         withCredentials: true
       });
-
-      console.log('Join room response:', data); // Debugging log
 
       if (!data?.room?.meetingId) {
         throw new Error('Invalid room ID received');
@@ -37,8 +34,8 @@ const JoinRoom = () => {
       toast.success('Joining room...');
       navigate(`/room/${data.room.meetingId}`);
     } catch (error) {
-      console.error('Join room error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to join room');
+      console.error('Error joining room:', error);
+      toast.error(error.response?.data?.message || 'Failed to join room');
     } finally {
       setLoading(false);
     }

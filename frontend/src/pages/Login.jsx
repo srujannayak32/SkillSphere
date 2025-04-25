@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { toast } from 'react-toastify';
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -12,26 +13,23 @@ export default function Login() {
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const login = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email: form.email,
-        password: form.password
-      }, {
-        withCredentials: true
-      });
-  
-      if (res.status === 200) {
-        navigate('/auth/dashboard');
-      }
-    } catch (error) {
-      console.error("Login error:", error.response?.data || error.message);
-      setError(error.response?.data?.message || 'Invalid login');
-    } finally {
-      setLoading(false);
+      const { data } = await axios.post(
+        'http://localhost:5000/api/auth/login',
+        form,
+        { withCredentials: true }
+      );
+
+      // Store both token and user data in localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      toast.success('Login successful!');
+      navigate('/auth/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed');
     }
   };
   
@@ -47,7 +45,7 @@ export default function Login() {
       </div>
 
       <form
-        onSubmit={login}
+        onSubmit={handleLogin}
         className="z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 w-full max-w-md shadow-lg transition-all duration-300 hover:shadow-2xl"
       >
         <h2 className="text-3xl font-extrabold text-center mb-6 text-white drop-shadow-sm">

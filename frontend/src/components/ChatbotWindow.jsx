@@ -1,10 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../api/axiosConfig';
 import ReactMarkdown from 'react-markdown';
 import { PaperAirplaneIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Add a custom hook for debugging autoplay issues that could be reused in RoomId.jsx
+const useAutoplayErrorHandling = (componentName) => {
+  useEffect(() => {
+    // This function helps debug and handle autoplay issues reported in the console
+    const handleAutoplayError = (error) => {
+      console.warn(`[${componentName}] Autoplay error intercepted:`, error.message);
+      // Log structured debugging information
+      console.info(`[${componentName}] Autoplay error details:`, {
+        timestamp: new Date().toISOString(),
+        errorName: error.name,
+        errorMessage: error.message,
+        // Add browser and environment information
+        userAgent: navigator.userAgent,
+        isMobile: /Mobi|Android/i.test(navigator.userAgent),
+        hasTouchScreen: 'ontouchstart' in window
+      });
+      
+      // Check for specific AbortError from autoplay
+      if (error.name === 'AbortError' && error.message.includes('play() request was interrupted')) {
+        console.info(`[${componentName}] Media element was likely removed during playback attempt`);
+        // Could implement recovery logic here
+      }
+    };
+
+    // Add custom window error handler specifically for media errors
+    window.addEventListener('error', (event) => {
+      if (event.error && event.error.name === 'AbortError') {
+        handleAutoplayError(event.error);
+      }
+    });
+
+    return () => {
+      // Cleanup
+      window.removeEventListener('error', handleAutoplayError);
+    };
+  }, [componentName]);
+};
+
 const ChatbotWindow = ({ onClose }) => {
+  // Use our custom hook to handle and debug autoplay errors
+  useAutoplayErrorHandling('ChatbotWindow');
+  
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -39,11 +80,9 @@ const ChatbotWindow = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      const { data } = await axios.post('/api/ai/ask', {
+      const { data } = await axiosInstance.post('/api/ai/ask', {
         message: input,
         context: 'SkillSphere mentorship platform'
-      }, {
-        withCredentials: true
       });
 
       const aiMessage = {
@@ -111,9 +150,11 @@ const ChatbotWindow = ({ onClose }) => {
                   ? 'bg-indigo-600 text-white' 
                   : 'bg-gray-800 border border-gray-700'}`}
               >
-                <ReactMarkdown className="prose prose-sm prose-invert">
-                  {message.text}
-                </ReactMarkdown>
+                <div className="prose prose-sm prose-invert">
+                  <ReactMarkdown>
+                    {message.text}
+                  </ReactMarkdown>
+                </div>
               </div>
             </motion.div>
           ))}
