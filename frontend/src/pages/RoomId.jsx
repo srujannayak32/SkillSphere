@@ -15,184 +15,6 @@ import EmojiPicker from 'emoji-picker-react';
 import { v4 as uuidv4 } from 'uuid';
 import '../styles/Room.css'; // Import the Room.css styles
 
-// Create a custom hook to handle media autoplay errors
-const useMediaAutoplayHandler = () => {
-  const attemptAutoplayRecovery = useCallback(async (mediaElement, maxRetries = 3) => {
-    if (!mediaElement) return false;
-    
-    // Record retry attempts to implement exponential backoff
-    let retryCount = 0;
-    let success = false;
-    
-    const attemptPlay = async () => {
-      try {
-        // Check if element is still in DOM before attempting play
-        if (document.body.contains(mediaElement)) {
-          await mediaElement.play();
-          console.log('Media playback recovered successfully');
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.warn(`Autoplay recovery attempt ${retryCount + 1} failed: ${error.message}`);
-        
-        // If element was removed, don't retry
-        if (!document.body.contains(mediaElement)) {
-          console.log('Media element no longer in DOM, stopping recovery attempts');
-          return false;
-        }
-        
-        // For browser policy restrictions, try muted playback as fallback
-        if (retryCount === maxRetries - 1) {
-          console.log('Trying fallback: muted autoplay');
-          try {
-            // Store original volume
-            const originalVolume = mediaElement.volume;
-            mediaElement.muted = true;
-            await mediaElement.play();
-            
-            // Gradually restore volume
-            setTimeout(() => {
-              const fadeInterval = setInterval(() => {
-                if (mediaElement.volume < originalVolume) {
-                  mediaElement.volume = Math.min(mediaElement.volume + 0.1, originalVolume);
-                } else {
-                  clearInterval(fadeInterval);
-                  mediaElement.muted = false;
-                }
-              }, 200);
-            }, 1000);
-            
-            return true;
-          } catch (mutedPlayError) {
-            console.error('Even muted autoplay failed:', mutedPlayError);
-            return false;
-          }
-        }
-        
-        return false;
-      }
-    };
-    
-    // Try immediate playback first
-    success = await attemptPlay();
-    if (success) return true;
-    
-    // If initial attempt fails, implement exponential backoff
-    while (retryCount < maxRetries && !success) {
-      const delayMs = Math.min(1000 * Math.pow(2, retryCount), 5000);
-      console.log(`Waiting ${delayMs}ms before retry ${retryCount + 1}/${maxRetries}`);
-      
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      success = await attemptPlay();
-      
-      if (success) return true;
-      retryCount++;
-    }
-    
-    return false;
-  }, []);
-  
-  // Setup global error monitoring for autoplay errors
-  useEffect(() => {
-    const handleGlobalPlaybackError = async (event) => {
-      // Filter for AbortError, which is typical for autoplay interruptions
-      if (event.error && event.error.name === 'AbortError' && 
-          (event.error.message.includes('interrupted') || 
-           event.error.message.includes('removed'))) {
-        
-        console.group('Autoplay Error Detected');
-        console.warn('Autoplay error details:', {
-          message: event.error.message,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          isMobile: /Mobi|Android/i.test(navigator.userAgent)
-        });
-        console.groupEnd();
-        
-        // Error event doesn't give us the media element, so we need to handle recovery elsewhere
-      }
-    };
-    
-    window.addEventListener('error', handleGlobalPlaybackError);
-    
-    return () => {
-      window.removeEventListener('error', handleGlobalPlaybackError);
-    };
-  }, []);
-  
-  // Create a robust video element setup function
-  const setupVideoElement = useCallback((el, streamSource, isSelf = false) => {
-    if (!el || !streamSource) return;
-    
-    // Set standard attributes
-    el.srcObject = streamSource;
-    el.autoplay = true;
-    el.playsInline = true;
-    if (isSelf) el.muted = true;
-    
-    // Add more robust play handling
-    const playWithErrorHandling = async () => {
-      try {
-        await el.play();
-      } catch (err) {
-        console.warn('Autoplay failed, attempting recovery:', err.message);
-        attemptAutoplayRecovery(el);
-      }
-    };
-    
-    // Execute play logic safely
-    playWithErrorHandling();
-    
-    // Listen for srcObject changes to handle new stream assignments
-    const oldSrcObject = el.srcObject;
-    Object.defineProperty(el, 'srcObject', {
-      get: () => oldSrcObject,
-      set: (newStream) => {
-        oldSrcObject.call(el, newStream);
-        // When source changes, attempt play again with recovery
-        playWithErrorHandling();
-      }
-    });
-    
-    // Setup mutation observer to detect if this element gets removed
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'childList' && mutation.removedNodes.length) {
-          // Check if our element was removed
-          for (let node of mutation.removedNodes) {
-            if (node === el || (node.contains && node.contains(el))) {
-              console.log('Video element being removed from DOM, cleaning up safely');
-              observer.disconnect();
-              
-              // Safely stop tracks if this is self-view to prevent memory leaks
-              if (isSelf && streamSource) {
-                streamSource.getTracks().forEach(track => {
-                  if (track.readyState === 'live') {
-                    track.stop();
-                  }
-                });
-              }
-            }
-          }
-        }
-      });
-    });
-    
-    // Start observing parent for DOM changes
-    if (el.parentNode) {
-      observer.observe(el.parentNode, { childList: true, subtree: true });
-    }
-    
-    // Return cleanup function
-    return () => {
-      observer.disconnect();
-    };
-  }, [attemptAutoplayRecovery]);
-  
-  return { attemptAutoplayRecovery, setupVideoElement };
-};
-
 const socket = io('http://localhost:5000', {
   withCredentials: true,
   transports: ['websocket']
@@ -411,9 +233,6 @@ const RoomId = () => {
       document.head.removeChild(styleElement);
     };
   }, []);
-
-  // Add our custom hook for autoplay handling
-  const { setupVideoElement } = useMediaAutoplayHandler();
 
   // Define cleanupMedia first, before it's used in useEffects
   const cleanupMedia = useCallback(() => {
@@ -1449,11 +1268,14 @@ const RoomId = () => {
                   if (el) {
                     if (isScreenSharing && screenStream) {
                       // If this user is screen sharing, show that stream
-                      setupVideoElement(el, screenStream, true);
+                      el.srcObject = screenStream;
                     } else if (activeScreenShare && peers.find(p => p.userId === activeScreenShare)?.stream) {
                       // If another user is screen sharing, show their stream
-                      setupVideoElement(el, peers.find(p => p.userId === activeScreenShare)?.stream, false);
+                      el.srcObject = peers.find(p => p.userId === activeScreenShare)?.stream;
                     }
+                    
+                    // Ensure autoplay works
+                    el.play().catch(err => console.error("Autoplay failed:", err));
                   }
                 }}
                 autoPlay
@@ -1484,14 +1306,17 @@ const RoomId = () => {
                       // not the screen sharing stream for this video element
                       if (isScreenSharing) {
                         // Use the original camera stream stored in mediaStreamRef
-                        setupVideoElement(el, mediaStreamRef.current, true);
+                        el.srcObject = mediaStreamRef.current;
                       } else {
                         // If not screen sharing, use the normal user stream
-                        setupVideoElement(el, userStream, true);
+                        el.srcObject = userStream;
                       }
                     } else if (hostParticipant.stream) {
-                      setupVideoElement(el, hostParticipant.stream, false);
+                      el.srcObject = hostParticipant.stream;
                     }
+                    
+                    // Ensure autoplay works
+                    el.play().catch(err => console.error("Autoplay failed:", err));
                   }
                 }}
                 autoPlay
@@ -1521,14 +1346,17 @@ const RoomId = () => {
                       // for this video element, not the screen sharing stream
                       if (isScreenSharing) {
                         // Use the original camera stream stored in mediaStreamRef
-                        setupVideoElement(el, mediaStreamRef.current, true);
+                        el.srcObject = mediaStreamRef.current;
                       } else {
                         // If not screen sharing, use the normal user stream
-                        setupVideoElement(el, userStream, true);
+                        el.srcObject = userStream;
                       }
                     } else if (participant.stream) {
-                      setupVideoElement(el, participant.stream, false);
+                      el.srcObject = participant.stream;
                     }
+                    
+                    // Ensure autoplay works
+                    el.play().catch(err => console.error("Autoplay failed:", err));
                   }
                 }}
                 autoPlay
