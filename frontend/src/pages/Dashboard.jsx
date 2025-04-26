@@ -93,9 +93,20 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:5000/api/auth/logout", {}, { 
+      // Clear localStorage completely
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('hasNewNotifications');
+      localStorage.removeItem('hasNewConnections');
+      localStorage.removeItem('pendingConnectionRequests');
+      
+      // Also try the API call to logout on server (but don't wait for it)
+      axios.post("http://localhost:5000/api/auth/logout", {}, { 
         withCredentials: true 
-      });
+      }).catch(err => console.error("Logout API error:", err));
+      
+      // Use navigate to redirect to login
+      toast.success("Logged out successfully!");
       window.location.href = "/auth/login";
     } catch (error) {
       toast.error("Error logging out. Please try again.");

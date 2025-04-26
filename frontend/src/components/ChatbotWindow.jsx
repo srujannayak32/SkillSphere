@@ -71,7 +71,7 @@ const ChatbotWindow = ({ onClose }) => {
 
   return (
     <motion.div
-      className="fixed bottom-24 right-8 w-96 bg-gray-900 rounded-xl shadow-2xl overflow-hidden z-40 border border-gray-700"
+      className="fixed bottom-24 right-8 w-96 bg-white rounded-xl shadow-2xl overflow-hidden z-40 border border-gray-300"
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -93,7 +93,7 @@ const ChatbotWindow = ({ onClose }) => {
       </div>
       
       {/* Messages */}
-      <div className="h-96 overflow-y-auto p-4 bg-gray-900/80 backdrop-blur-sm">
+      <div className="h-96 overflow-y-auto p-4 bg-white text-gray-800">
         <AnimatePresence>
           {messages.map((message) => (
             <motion.div
@@ -107,9 +107,9 @@ const ChatbotWindow = ({ onClose }) => {
               <div
                 className={`inline-block p-3 rounded-lg max-w-xs ${message.sender === 'user' 
                   ? 'bg-indigo-600 text-white' 
-                  : 'bg-gray-800 border border-gray-700'}`}
+                  : 'bg-gray-100 text-gray-800 border border-gray-200'}`}
               >
-                <div className="prose prose-sm prose-invert">
+                <div className={`prose prose-sm ${message.sender === 'user' ? 'prose-invert' : ''}`}>
                   <ReactMarkdown>
                     {message.text}
                   </ReactMarkdown>
@@ -127,10 +127,10 @@ const ChatbotWindow = ({ onClose }) => {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="inline-block p-3 rounded-lg bg-gray-800 border border-gray-700">
+            <div className="inline-block p-3 rounded-lg bg-gray-100 border border-gray-200">
               <div className="flex items-center space-x-2">
-                <ArrowPathIcon className="h-4 w-4 text-gray-400 animate-spin" />
-                <span className="text-gray-300">Thinking...</span>
+                <ArrowPathIcon className="h-4 w-4 text-gray-600 animate-spin" />
+                <span className="text-gray-600">Thinking...</span>
               </div>
             </div>
           </motion.div>
@@ -141,7 +141,7 @@ const ChatbotWindow = ({ onClose }) => {
       {/* Input */}
       <form 
         onSubmit={handleSubmit} 
-        className="p-4 border-t border-gray-700 flex bg-gray-900/50 backdrop-blur-sm"
+        className="p-4 border-t border-gray-200 flex bg-white"
       >
         <input
           type="text"
@@ -149,7 +149,7 @@ const ChatbotWindow = ({ onClose }) => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask me anything..."
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-400"
+          className="flex-1 bg-gray-50 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 placeholder-gray-500"
           disabled={isLoading}
           autoFocus
         />

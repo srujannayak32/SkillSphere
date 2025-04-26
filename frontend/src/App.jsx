@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Chatbot } from './components';
 
 import Home from './pages/Home';
@@ -16,12 +16,22 @@ import Explore from './pages/Explore';
 import Connections from './pages/Connections';
 import Recordings from './pages/Recordings';
 
+// Wrapper component to conditionally render Chatbot based on route
+const ChatbotWrapper = () => {
+  const location = useLocation();
+  const isAuthenticated = localStorage.getItem('token') !== null;
+  const isDashboardPage = location.pathname === '/auth/dashboard';
+  
+  // Only show Chatbot on dashboard page and when authenticated
+  return isAuthenticated && isDashboardPage ? <Chatbot /> : null;
+};
+
 function App() {
   const isAuthenticated = localStorage.getItem('token') !== null; // Check for valid JWT token
 
   return (
     <Router>
-      {isAuthenticated && <Chatbot />}
+      <ChatbotWrapper />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
