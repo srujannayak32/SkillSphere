@@ -87,47 +87,60 @@ const Explore = () => {
   }, [currentUserId]);
 
   useEffect(() => {
-    const fetchProfiles = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('You must be logged in to view profiles.');
-          return;
-        }
+    fetchProfiles();
+  }, [searchQuery, roleFilter, currentUserId, connectedUsers]);
 
-        const response = await axios.get('http://localhost:5000/api/profile/explore', {
-          params: {
-            query: searchQuery,
-            role: roleFilter !== 'all' ? roleFilter : undefined
-          },
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true
-        });
-        
-        // Filter out the current user and connected users
-        const filteredProfiles = response.data.filter(profile => {
-          // Skip if it's the current user
-          if (profile.userId?._id === currentUserId) return false;
-          
-          // Skip if user is already connected
-          if (connectedUsers.includes(profile.userId?._id)) return false;
-          
-          return true;
-        });
-        
-        setProfiles(filteredProfiles || []);
-      } catch (error) {
-        console.error('Error fetching profiles:', error);
-        toast.error(error.response?.data?.error || 'Failed to fetch profiles');
-      } finally {
-        setLoading(false);
-      }
+  useEffect(() => {
+    const handleConnectionAccepted = (event) => {
+      // Refresh connections list
+      fetchConnections();
+      // Also refresh profiles to hide the newly connected user
+      fetchProfiles();
     };
 
-    if (currentUserId) {
-      fetchProfiles();
+    window.addEventListener('connectionAccepted', handleConnectionAccepted);
+    
+    return () => {
+      window.removeEventListener('connectionAccepted', handleConnectionAccepted);
+    };
+  }, []);
+
+  const fetchProfiles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('You must be logged in to view profiles.');
+        return;
+      }
+
+      const response = await axios.get('http://localhost:5000/api/profile/explore', {
+        params: {
+          query: searchQuery,
+          role: roleFilter !== 'all' ? roleFilter : undefined
+        },
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
+      });
+      
+      // Filter out the current user and connected users
+      const filteredProfiles = response.data.filter(profile => {
+        // Skip if it's the current user
+        if (profile.userId?._id === currentUserId) return false;
+        
+        // Skip if user is already connected
+        if (connectedUsers.includes(profile.userId?._id)) return false;
+        
+        return true;
+      });
+      
+      setProfiles(filteredProfiles || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+      toast.error(error.response?.data?.error || 'Failed to fetch profiles');
+      setLoading(false);
     }
-  }, [searchQuery, roleFilter, currentUserId, connectedUsers]);
+  };
 
   const handleConnect = async (userId) => {
     try {

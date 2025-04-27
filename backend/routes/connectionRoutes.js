@@ -2,7 +2,7 @@ import express from 'express';
 import {
   sendConnectionRequest,
   respondToConnection,
-  getUserConnections,
+  getAllConnections, // Ensure this is imported
   getPendingConnections,
   searchUsers,
   markMessagesAsSeen,
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.post('/connect/:targetUserId', protect, sendConnectionRequest);
 router.post('/respond/:connectionId', protect, respondToConnection);
-router.get('/all', protect, getUserConnections);
+router.get('/all', protect, getAllConnections);
 router.get('/pending', protect, getPendingConnections);
 router.get('/search', protect, searchUsers);
 

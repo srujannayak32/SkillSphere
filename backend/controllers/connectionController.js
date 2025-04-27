@@ -125,12 +125,27 @@ export const respondToConnection = async (req, res) => {
           await reverseConnection.save();
         }
       }
+
+      // Return info that connection was accepted so frontend can update accordingly
+      res.status(200).json({ 
+        message: `Connection request ${action}ed successfully`,
+        status: 'accepted',
+        connectionId: connection._id,
+        userId: connection.userId
+      });
     } else {
       connection.status = 'rejected';
+      
+      // Return info that connection was rejected
+      res.status(200).json({ 
+        message: `Connection request ${action}ed successfully`,
+        status: 'rejected',
+        connectionId: connection._id,
+        userId: connection.userId
+      });
     }
 
     await connection.save();
-    res.status(200).json({ message: `Connection request ${action}ed successfully` });
   } catch (err) {
     console.error('Error responding to connection request:', err);
     res.status(500).json({ message: 'Failed to respond to connection request' });
@@ -176,19 +191,34 @@ export const getUserConnections = async (req, res) => {
 // Get pending connections
 export const getPendingConnections = async (req, res) => {
   try {
-    const { userId } = req.session;
-    const user = await User.findById(userId)
-      .populate('connections.user', 'fullName photo role')
-      .populate('connections.initiatedBy', 'fullName');
+    const userId = req.user?._id; // Use req.user from auth middleware
+    if (!userId) {
+      return res.status(400).json({ message: "User not authenticated" });
+    }
 
-    const pending = user.connections
-      .filter(conn => conn.status === 'pending' && conn.initiatedBy.toString() !== userId.toString())
-      .map(conn => conn.toObject());
+    // Find all pending connection requests sent by this user
+    const pendingConnections = await Connection.find({ 
+      userId: userId,
+      status: "pending" 
+    }).populate({
+      path: 'connectedProfileId',
+      populate: { path: 'userId', select: '_id fullName username' }
+    });
+    
+    // Format the pending connections for easier use in frontend
+    const formattedPendingConnections = pendingConnections.map(conn => ({
+      _id: conn._id,
+      status: conn.status,
+      receiver: conn.connectedProfileId?.userId?._id,
+      targetUserId: conn.connectedProfileId?.userId?._id,
+      receiverName: conn.connectedProfileId?.userId?.fullName || 'Unknown User',
+      createdAt: conn.createdAt
+    }));
 
-    res.status(200).json(pending);
-  } catch (err) {
-    console.error("Get Pending Connections Error:", err);
-    res.status(500).json({ message: "Failed to get pending connections" });
+    res.status(200).json(formattedPendingConnections);
+  } catch (error) {
+    console.error("Get Pending Connections Error:", error);
+    res.status(500).json({ message: "Failed to fetch pending connections" });
   }
 };
 
@@ -288,5 +318,32 @@ export const getConnectionNotifications = async (req, res) => {
   } catch (err) {
     console.error("Error fetching connection notifications:", err);
     res.status(500).json({ message: "Failed to fetch notifications" });
+  }
+};
+
+// Get all connections
+export const getAllConnections = async (req, res) => {
+  try {
+    const userId = req.user?._id; // Ensure req.user exists
+    const connections = await Connection.find({ userId, status: 'accepted' })
+      .populate({
+        path: 'connectedProfileId',
+        populate: { path: 'userId', select: 'fullName username avatar' },
+      });
+
+    const formattedConnections = connections.map((conn) => ({
+      userId: conn.connectedProfileId?.userId?._id || conn.connectedProfileId?._id,
+      avatar: conn.connectedProfileId?.userId?.avatar || '',
+      fullName: conn.connectedProfileId?.userId?.fullName || 'Unknown User',
+      username: conn.connectedProfileId?.userId?.username || 'No username',
+      bio: conn.connectedProfileId?.bio || '',
+      role: conn.connectedProfileId?.role || '',
+      skills: conn.connectedProfileId?.skills || [],
+    }));
+
+    res.status(200).json(formattedConnections);
+  } catch (err) {
+    console.error('Error fetching connections:', err);
+    res.status(500).json({ message: 'Failed to fetch connections' });
   }
 };

@@ -72,7 +72,7 @@ const NotificationBadge = () => {
   const handleResponse = async (notificationId, action) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      const { data } = await axios.post(
         `http://localhost:5000/api/connections/respond/${notificationId}`,
         { action },
         {
@@ -92,11 +92,23 @@ const NotificationBadge = () => {
         setShowDropdown(false);
       }
       
-      // If accepting, set hasNewConnections flag
+      // If accepting, refresh connections with a custom event
       if (action === 'accept') {
         localStorage.setItem('hasNewConnections', 'true');
-        // Trigger any other components to update
-        window.dispatchEvent(new Event('connectionAccepted'));
+        
+        // Get the sender ID from the notification
+        const notification = notifications.find(n => n._id === notificationId);
+        const connectedUserId = notification?.sender?._id;
+        
+        // Dispatch a custom event with connection details
+        const connectionEvent = new CustomEvent('connectionAccepted', {
+          detail: { 
+            userId: connectedUserId,
+            status: 'accepted'
+          }
+        });
+        
+        window.dispatchEvent(connectionEvent);
       }
     } catch (error) {
       console.error('Error responding to connection request:', error);

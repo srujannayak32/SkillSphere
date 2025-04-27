@@ -308,11 +308,40 @@ const Connections = () => {
               >
                 <div className="flex items-center space-x-3">
                   <div className="relative">
-                    <img
-                      src={conn.avatar || "https://via.placeholder.com/40"}
-                      alt={conn.fullName}
-                      className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                    />
+                    {/* Connection avatar with fallback */}
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {conn.avatar ? (
+                        <img
+                          src={conn.avatar.includes('http')
+                            ? conn.avatar
+                            : `http://localhost:5000/uploads/profiles/${conn.avatar}`}
+                          alt={conn.fullName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const parent = e.target.parentElement;
+                            if (parent) {
+                              // Show first letter of name or a user icon
+                              const userInitial = conn.fullName?.charAt(0);
+                              if (userInitial) {
+                                parent.innerHTML = `<span class="text-lg font-semibold text-gray-500">${userInitial}</span>`;
+                              } else {
+                                parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+                              }
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-lg font-semibold text-gray-500">
+                          {conn.fullName?.charAt(0) || (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                          )}
+                        </span>
+                      )}
+                    </div>
                     {conn.hasUnreadMessages && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center border-2 border-white">
                         {conn.unreadCount > 9 ? '9+' : conn.unreadCount}
@@ -350,11 +379,28 @@ const Connections = () => {
     return (
       <div className="w-2/3 flex flex-col h-full bg-white">
         <div className="border-b p-4 flex items-center space-x-3 bg-white shadow-sm">
-          <img
-            src={activeConnection?.avatar || "https://via.placeholder.com/40"}
-            alt={activeConnection?.fullName}
-            className="w-10 h-10 rounded-full object-cover border border-gray-200"
-          />
+          {/* Active connection avatar with fallback */}
+          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+            {activeConnection?.avatar ? (
+              <img
+                src={activeConnection.avatar.includes('http')
+                  ? activeConnection.avatar
+                  : `http://localhost:5000/uploads/profiles/${activeConnection.avatar}`}
+                alt={activeConnection?.fullName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  // Show first letter of name
+                  const initial = activeConnection?.fullName?.charAt(0) || '?';
+                  e.target.parentElement.innerHTML = `<span class="text-lg font-semibold text-gray-500">${initial}</span>`;
+                }}
+              />
+            ) : (
+              <span className="text-lg font-semibold text-gray-500">
+                {activeConnection?.fullName?.charAt(0) || '?'}
+              </span>
+            )}
+          </div>
           <div>
             <h3 className="font-medium">{activeConnection?.fullName}</h3>
             <p className="text-sm text-gray-600">{activeConnection?.role || "User"}</p>
@@ -520,13 +566,14 @@ const Connections = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-teal-800 connections-bg relative">
+        <div className="absolute inset-0 web-dev-icons-overlay opacity-15 z-0"></div>
         <Navbar />
-        <div className="container mx-auto py-8 px-4">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800">My Connections</h1>
+        <div className="container mx-auto py-8 px-4 relative z-10">
+          <h1 className="text-2xl font-bold mb-6 text-white">My Connections</h1>
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-2 text-gray-600">Loading connections...</span>
+            <div className="w-8 h-8 border-4 border-teal-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-2 text-teal-200">Loading connections...</span>
           </div>
         </div>
       </div>
@@ -534,19 +581,60 @@ const Connections = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-teal-800 connections-bg relative">
+      <div className="absolute inset-0 web-dev-icons-overlay opacity-15 z-0"></div>
       <Navbar />
-      <div className="container mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6 text-gray-800">My Connections</h1>
+      <div className="container mx-auto py-8 px-4 relative z-10">
+        <h1 className="text-2xl font-bold mb-6 text-white">My Connections</h1>
         <div className="mb-6">
           <ConnectionsTabs 
             connections={connections} 
             onMessageClick={openChat} 
           />
         </div>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Messages</h2>
-        {renderMessageSection()}
+        <h2 className="text-xl font-semibold mb-4 text-white">Messages</h2>
+        <div className="bg-white/85 backdrop-blur-md rounded-lg shadow-xl overflow-hidden h-[calc(100vh-260px)] flex border border-gray-200">
+          {renderConnectionsList()}
+          {renderChatBox()}
+        </div>
       </div>
+      
+      <style jsx global>{`
+        .connections-bg {
+          position: relative;
+          background-size: 400% 400%;
+          animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+        
+        .web-dev-icons-overlay {
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800' opacity='0.15'%3E%3Cg fill='white'%3E%3Cpath d='M178 88l-40 68-40-68h-60l70 120-70 120h60l40-68 40 68h60l-70-120 70-120zM378 88h-120v240h120c66 0 120-54 120-120s-54-120-120-120zm0 190h-70v-140h70c39 0 70 31 70 70s-31 70-70 70zM590 88h-50v240h50zM650 208c0 44 36 80 80 80h20v40h-120v-40h20c44 0 80-36 80-80 0-30-17-58-42-72l-10-5-10-5-10-2-15-1-13 1c-9 1-17 3-25 8-8 4-16 10-23 18l35 35c8-9 19-15 33-15 15 0 25 10 25 25 0 14-11 25-25 25h-20v-80h-50v150h170v-80h-20c-44 0-80-36-80-80 0-26 13-51 35-67 23-16 48-18 72-10 12 4 24 12 33 22l10 14c11 18 17 39 17 61 0 66-54 120-120 120h-100v-240h100c5 0 10 0 15 1l13 2c17 5 33 14 46 26l11 14 9 17 8 40c0 4 1 9 1 14h-50c0-5 0-10-1-14l-7-26-2-5-3-4-3-4-7-7-4-3-5-3-5-2-9-2c-4-1-9-1-13-1zM720 68c15 0 30 15 30 30s-15 30-30 30-30-15-30-30 15-30 30-30z'/%3E%3C/g%3E%3C/svg%3E");
+          background-size: 800px 800px;
+          background-position: center;
+          background-repeat: repeat;
+          animation: floatingIcons 60s linear infinite;
+        }
+        
+        @keyframes floatingIcons {
+          0% {
+            background-position: 0 0;
+          }
+          100% {
+            background-position: 800px 800px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

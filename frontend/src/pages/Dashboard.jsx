@@ -2,8 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { 
-  BadgeCheck, Activity, Star, User, Award, TrendingUp,
-  MessageSquare, Users, Clock, BookOpen
+  BadgeCheck, User, Users
 } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -73,15 +72,11 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    sessionsCompleted: 0,
-    mentorsConnected: 0,
-    hoursLearned: 0,
-    coursesTaken: 0
+    mentorsConnected: 0
   });
   const [notifications, setNotifications] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [lastActive, setLastActive] = useState("N/A");
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -127,30 +122,42 @@ export default function Dashboard() {
 
         setUser(userRes.data);
 
+        // Format and set last active date if available
         if (userRes.data.lastActive) {
           const lastActiveDate = new Date(userRes.data.lastActive);
-          const formattedDate = lastActiveDate.toLocaleDateString();
+          const formattedDate = lastActiveDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short', 
+            day: 'numeric'
+          });
           setLastActive(formattedDate);
+        } else {
+          setLastActive("Not available");
         }
 
-        const [profileRes, statsRes] = await Promise.all([
+        // Get profile data and calculate statistics
+        const [profileRes, connectionsRes] = await Promise.all([
           axios.get(`http://localhost:5000/api/profile/${userRes.data._id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(() => ({ data: null })),
-          axios.get("http://localhost:5000/api/stats/user", {
+          
+          // Get connections count - just for mentor count
+          axios.get("http://localhost:5000/api/connections/all", {
             headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => ({
-            data: {
-              sessionsCompleted: 0,
-              mentorsConnected: 0,
-              hoursLearned: 0,
-              coursesTaken: 0,
-            },
-          })),
+          }).catch(() => ({ data: [] }))
         ]);
 
         setProfile(profileRes.data);
-        setStats(statsRes.data);
+        
+        // Calculate only mentors connected (we're removing other stats)
+        const mentorConnections = connectionsRes.data.filter(conn => 
+          conn.role === 'mentor' || conn.role === 'both'
+        ).length;
+        
+        // Update only the stats we need
+        setStats({
+          mentorsConnected: mentorConnections
+        });
       } catch (error) {
         console.error("Error fetching user data:", error);
         toast.error("Session expired. Please login again.");
@@ -206,6 +213,7 @@ export default function Dashboard() {
     );
   }
 
+  // Reduce dashboardCards to only keep the cards we want
   const dashboardCards = [
     {
       icon: <User className="card-icon" />,
@@ -235,22 +243,12 @@ export default function Dashboard() {
       color: "purple-card"
     },
     {
-      icon: <Activity className="card-icon" />,
-      title: "Recent Activity",
-      content: "Completed React challenge",
-      color: "teal-card"
-    },
-    {
       icon: <Users className="card-icon" />,
       title: "Mentors Connected",
-      content: stats.mentorsConnected,
+      content: stats.mentorsConnected > 0 
+        ? `${stats.mentorsConnected} mentor${stats.mentorsConnected !== 1 ? 's' : ''}`
+        : "No mentors yet",
       color: "indigo-card"
-    },
-    {
-      icon: <Award className="card-icon" />,
-      title: "Badges",
-      content: "🌟 Rising Star, 🔥 Fast Learner",
-      color: "rose-card"
     }
   ];
 
@@ -292,7 +290,7 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
             <motion.div
               key={index}
@@ -388,7 +386,7 @@ export default function Dashboard() {
             className="action-card join cursor-hover-effect"
           >
             <div className="action-icon">
-              <MessageSquare size={24} />
+              <Users size={24} />
             </div>
             <div className="action-text">Join a Room</div>
           </Link>
@@ -406,7 +404,7 @@ export default function Dashboard() {
             className="action-card view cursor-hover-effect"
           >
             <div className="action-icon">
-              <BookOpen size={24} />
+              <User size={24} />
             </div>
             <div className="action-text">View Profile</div>
           </Link>
@@ -432,7 +430,7 @@ export default function Dashboard() {
         >
           <p>Keep pushing your limits and building amazing things</p>
           <p className="mt-2 text-sm text-blue-200">
-            Last active: {lastActive}
+            Last active: {lastActive || "Not available"}
           </p>
         </motion.div>
         <Chatbot />
@@ -704,19 +702,9 @@ export default function Dashboard() {
             border-top: 1px solid rgba(168, 85, 247, 0.3);
           }
           
-          .teal-card {
-            background: linear-gradient(145deg, rgba(19, 78, 74, 0.7), rgba(15, 23, 42, 0.7));
-            border-top: 1px solid rgba(20, 184, 166, 0.3);
-          }
-          
           .indigo-card {
             background: linear-gradient(145deg, rgba(49, 46, 129, 0.7), rgba(15, 23, 42, 0.7));
             border-top: 1px solid rgba(99, 102, 241, 0.3);
-          }
-          
-          .rose-card {
-            background: linear-gradient(145deg, rgba(136, 19, 55, 0.7), rgba(15, 23, 42, 0.7));
-            border-top: 1px solid rgba(244, 63, 94, 0.3);
           }
           
           /* Skill badges */
