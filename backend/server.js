@@ -6,6 +6,8 @@ import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
 
 // Routes imports
 import authRoutes from './routes/authRoutes.js';
@@ -40,6 +42,21 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Configure session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'skillsphere-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions'
+  })
+}));
 
 // Serve profile pictures from uploads folder
 app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));

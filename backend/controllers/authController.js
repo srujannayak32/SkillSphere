@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import nodemailer from 'nodemailer';
-// import session from 'express-session';
+// Uncomment session import since we're now using it
+import session from 'express-session';
 
 dotenv.config();
 
@@ -99,10 +100,20 @@ export const forgotPasswordController = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await Otp.create({ email, otp });
+    
+    // Send the OTP to user's email
     await sendOtp(email, otp);
 
-    req.session.email = email;
-    res.json({ msg: 'OTP sent to your email' });
+    // Store email in session for later use in resetPasswordController
+    if (req.session) {
+      req.session.email = email;
+      res.json({ msg: 'OTP sent to your email' });
+    } else {
+      // If session is not available, handle gracefully
+      // Store email in a cookie as fallback
+      res.cookie('resetEmail', email, { maxAge: 3600000, httpOnly: true });
+      res.json({ msg: 'OTP sent to your email. Please use it within 10 minutes.' });
+    }
   } catch (err) {
     console.error("Forgot Password Error:", err);
     res.status(500).json({ msg: 'Failed to send OTP' });
@@ -115,10 +126,17 @@ export const forgotPasswordController = async (req, res) => {
 export const resetPasswordController = async (req, res) => {
   try {
     const { otp, newPassword } = req.body;
-    const email = req.session.email;
+    
+    // Try to get email from session first
+    let email = req.session?.email;
+    
+    // If not in session, try to get from cookie (our fallback)
+    if (!email && req.cookies?.resetEmail) {
+      email = req.cookies.resetEmail;
+    }
 
     if (!email) {
-      return res.status(400).json({ msg: 'Email not found in session. Please verify OTP again.' });
+      return res.status(400).json({ msg: 'Email not found in session. Please try the forgot password process again.' });
     }
 
     const otpRecord = await Otp.findOne({ email, otp });
@@ -129,6 +147,14 @@ export const resetPasswordController = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.updateOne({ email }, { password: hashedPassword });
     await Otp.deleteMany({ email });
+
+    // Clear session and cookie
+    if (req.session) {
+      req.session.email = null;
+    }
+    if (req.cookies?.resetEmail) {
+      res.clearCookie('resetEmail');
+    }
 
     res.json({ msg: 'Password updated successfully.' });
   } catch (err) {
@@ -200,14 +226,12 @@ export const getDashboardData = async (req, res) => {
 // --------------------------------- //
 //             LOGOUT               //
 // --------------------------------- //
-// Updated logout function
+// Updated logout function for JWT authentication
 export const logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).send("Could not log out. Please try again.");
-    }
-    res.clearCookie("connect.sid"); // clears the session cookie
-    res.status(200).send("Logged out successfully.");
-  });
+  // For JWT-based authentication, server-side logout is minimal
+  // The client is responsible for removing the token from storage
+  
+  // Just send a success response
+  res.status(200).json({ message: "Logged out successfully." });
 };
 
