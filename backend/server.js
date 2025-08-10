@@ -37,26 +37,42 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
 
 // Configure session middleware
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'skillsphere-secret-key',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // Changed to false for development
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  },
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    collectionName: 'sessions'
-  })
-}));
+  }
+};
+
+// Don't use MongoDB store for local development
+if (process.env.NODE_ENV === 'production') {
+  try {
+    sessionConfig.store = MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      collectionName: 'sessions'
+    });
+  } catch (err) {
+    console.log('Session store creation failed, using memory store');
+  }
+} else {
+  console.log('Using memory store for sessions (development mode)');
+}
+
+app.use(session(sessionConfig));
 
 // Serve profile pictures from uploads folder
 app.use('/uploads/profiles', express.static(path.join(__dirname, 'uploads/profiles')));
@@ -83,13 +99,40 @@ app.use('/api/notifications', notificationRoutes);
 // Log MongoDB connection info - only log in development
 console.log('MongoDB URI:', process.env.MONGODB_URI ? 'URI is defined' : 'URI is undefined');
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Database connection with error handling
+const connectDB = async () => {
+  try {
+    // Connect to local MongoDB
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ Connected to local MongoDB');
+    global.dbConnected = true;
+    
+    // Start server after successful DB connection
+    const PORT = process.env.PORT || 5000;
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`💾 Database connected: ${global.dbConnected}`);
+      console.log('🎯 MongoDB is ready! You can now signup/login normally');
+    });
+    
+  } catch (err) {
+    console.error('❌ MongoDB connection failed:', err.message);
+    console.log('⚠️  Make sure MongoDB is running locally on port 27017');
+    console.log('📝 To start MongoDB: mongod --dbpath "C:\\data\\db"');
+    global.dbConnected = false;
+    
+    // Start server anyway for development
+    const PORT = process.env.PORT || 5000;
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`💾 Database connected: ${global.dbConnected}`);
+      console.log('🔧 Development mode: Use test@test.com / test123 for login');
+    });
+  }
+};
 
-// Start server
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Connect to database
+connectDB();

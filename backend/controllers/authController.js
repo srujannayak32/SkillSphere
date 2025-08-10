@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import nodemailer from 'nodemailer';
@@ -170,6 +171,43 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check if database is connected
+    if (!global.dbConnected) {
+      // Development mode fallback authentication
+      console.log('Using fallback authentication (no database)');
+      
+      // Test credentials for development
+      if (email === 'test@test.com' && password === 'test123') {
+        // Generate a proper ObjectId for development
+        const devUserId = new mongoose.Types.ObjectId();
+        
+        const token = jwt.sign(
+          { id: devUserId.toString(), email: 'test@test.com' },
+          process.env.JWT_SECRET,
+          { expiresIn: '1d' }
+        );
+
+        const userData = {
+          _id: devUserId.toString(),
+          fullName: 'Test User',
+          username: 'testuser',
+          email: 'test@test.com',
+          role: 'user'
+        };
+
+        return res.status(200).json({ 
+          message: "Login successful (development mode)", 
+          token,
+          user: userData
+        });
+      } else {
+        return res.status(401).json({ 
+          message: "Development mode: Use test@test.com / test123" 
+        });
+      }
+    }
+
+    // Normal database authentication
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "Invalid email" });
