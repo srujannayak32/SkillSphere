@@ -21,4 +21,33 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Add a response interceptor to handle token expiration
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle token expiration
+    if (error.response?.status === 401) {
+      const isTokenExpired = error.response?.data?.expired;
+      
+      if (isTokenExpired) {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Show a message if toast is available
+        console.log('Session expired. Please login again.');
+        
+        // Redirect to login page
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login';
+        }
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 export default axiosInstance;
